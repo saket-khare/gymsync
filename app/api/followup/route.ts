@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGymConfig } from '@/lib/gym-config';
-import { getRow, updateRow } from '@/lib/google-sheets';
+import { getConvexClient } from '@/lib/convex';
+import { api } from '@/convex/_generated/api';
 import { sendFollowUpEmail } from '@/lib/email-sender';
 
 interface FollowUpBody {
@@ -31,36 +32,34 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ success: false, error: 'Gym not found' }, { status: 404 });
     }
 
-    // Get member row
-    if (!gymConfig.googleSheetId) {
-      return NextResponse.json({ success: false, error: 'No sheet configured' }, { status: 400 });
-    }
-
-    const memberRow = await getRow(gymConfig.googleSheetId, rowId);
-    if (!memberRow) {
+    // Get member from Convex
+    const convex = getConvexClient();
+    const member = await convex.query(api.members.getByRowId, { rowId });
+    if (!member) {
       return NextResponse.json({ success: false, error: 'Member not found' }, { status: 404 });
     }
 
     // Check if already sent
     const alreadySentKey = day === 3 ? 'day3Sent' : day === 7 ? 'day7Sent' : 'day30Sent';
-    if (memberRow[alreadySentKey]) {
+    if (member[alreadySentKey]) {
       return NextResponse.json({ success: true, message: 'Already sent' });
     }
 
-    const memberName = `${memberRow.firstName} ${memberRow.lastName}`;
+    const memberName = `${member.firstName} ${member.lastName}`;
 
     await sendFollowUpEmail({
-      memberEmail: memberRow.email,
+      memberEmail: member.email,
       memberName,
       gymConfig,
       day,
-      primaryGoal: memberRow.primaryGoal,
+      primaryGoal: member.primaryGoal,
     });
 
     // Mark as sent
-    await updateRow(gymConfig.googleSheetId, rowId, {
+    await convex.mutation(api.members.update, {
+      rowId,
       [alreadySentKey]: true,
-    } as Parameters<typeof updateRow>[2]);
+    } as { rowId: string; day3Sent?: boolean; day7Sent?: boolean; day30Sent?: boolean });
 
     return NextResponse.json({ success: true });
   } catch (err) {

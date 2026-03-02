@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGymConfig } from '@/lib/gym-config';
-import { updateRow } from '@/lib/google-sheets';
+import { getConvexClient } from '@/lib/convex';
+import { api } from '@/convex/_generated/api';
 import { generateMealPlan, generateTrainerBrief } from '@/lib/ai-generation';
 import { generateMealPlanPDF, generateTrainerBriefPDF } from '@/lib/pdf-generator';
 import { sendWelcomeEmail, sendTrainerBriefEmail, sendInternalAlertEmail } from '@/lib/email-sender';
@@ -32,16 +33,51 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       throw new Error(`Gym config not found for slug: ${gymSlug}`);
     }
 
+    const convex = getConvexClient();
+
     // Update status to processing
-    if (gymConfig.googleSheetId) {
-      await updateRow(gymConfig.googleSheetId, rowId, { processingStatus: 'processing' });
-    }
+    await convex.mutation(api.members.update, {
+      rowId,
+      processingStatus: 'processing',
+    });
 
     // Generate meal plan and trainer brief in parallel
     const [mealPlan, trainerBrief] = await Promise.all([
       generateMealPlan(memberData, gymConfig),
       generateTrainerBrief(memberData, gymConfig),
     ]);
+
+    // Store meal plan and trainer brief in Convex
+    const member = await convex.query(api.members.getByRowId, { rowId });
+    if (member) {
+      await Promise.all([
+        convex.mutation(api.mealPlans.store, {
+          memberId: member._id,
+          gymId: member.gymId,
+          memberName: `${memberData.firstName} ${memberData.lastName}`,
+          goal: mealPlan.goal,
+          weeklyCalorieTarget: mealPlan.weeklyCalorieTarget,
+          days: mealPlan.days,
+          generalGuidelines: mealPlan.generalGuidelines,
+          foodsToAvoid: mealPlan.foodsToAvoid,
+          supplementSuggestions: mealPlan.supplementSuggestions,
+          generatedAt: mealPlan.generatedAt,
+        }),
+        convex.mutation(api.trainerBriefs.store, {
+          memberId: member._id,
+          gymId: member.gymId,
+          memberSnapshot: trainerBrief.memberSnapshot,
+          gapAnalysis: trainerBrief.gapAnalysis,
+          conversationStarters: trainerBrief.conversationStarters,
+          upsellSignal: trainerBrief.upsellSignal,
+          upsellReasoning: trainerBrief.upsellReasoning,
+          redFlags: trainerBrief.redFlags,
+          suggestedModifications: trainerBrief.suggestedModifications,
+          baselineTestSummary: trainerBrief.baselineTestSummary,
+          generatedAt: trainerBrief.generatedAt,
+        }),
+      ]);
+    }
 
     // Generate PDFs in parallel
     const [mealPlanPdfBuffer, trainerBriefPdfBuffer] = await Promise.all([
@@ -68,25 +104,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }),
     ]);
 
-    // Update sheet: processed
-    if (gymConfig.googleSheetId) {
-      await updateRow(gymConfig.googleSheetId, rowId, {
-        processingStatus: 'processed',
-        mealPlanGenerated: true,
-        emailSent: true,
-      });
-    }
+    // Update member: processed
+    await convex.mutation(api.members.update, {
+      rowId,
+      processingStatus: 'processed',
+      mealPlanGenerated: true,
+      emailSent: true,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     console.error('[generate] Pipeline failed:', errorMessage);
 
-    // Try to update sheet to failed
+    // Try to update status to failed
     try {
-      const gymConfig = await getGymConfig(gymSlug);
-      if (gymConfig?.googleSheetId && rowId) {
-        await updateRow(gymConfig.googleSheetId, rowId, { processingStatus: 'failed' });
+      if (rowId) {
+        const convex = getConvexClient();
+        await convex.mutation(api.members.update, {
+          rowId,
+          processingStatus: 'failed',
+        });
       }
     } catch {
       // Best effort

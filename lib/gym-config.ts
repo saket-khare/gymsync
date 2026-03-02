@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { getConvexClient } from '@/lib/convex';
+import { api } from '@/convex/_generated/api';
 import type { GymConfig } from '@/types';
 
 // Module-level cache: slug → { config, fetchedAt }
@@ -6,7 +7,7 @@ const configCache = new Map<string, { config: GymConfig; fetchedAt: number }>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 // ── Demo Mode ──────────────────────────────────────────────
-// When DEMO_MODE=true (or Supabase is not configured), the app
+// When DEMO_MODE=true (or Convex is not configured), the app
 // serves a hardcoded demo gym config so you can test the UI
 // without any external services.
 const DEMO_GYM_CONFIG: GymConfig = {
@@ -18,7 +19,7 @@ const DEMO_GYM_CONFIG: GymConfig = {
   trainerName: 'Rahul Sharma',
   trainerEmail: 'akarshcreate@gmail.com',
   adminEmail: 'akarshcreate@gmail.com',
-  googleSheetId: '1ch_3Alo-b9iTIIc-7DYzqkCs1UV3JP9iAoPB0P21ct8',
+  googleSheetId: '',
   isActive: true,
   plan: 'growth',
   createdAt: new Date().toISOString(),
@@ -27,36 +28,24 @@ const DEMO_GYM_CONFIG: GymConfig = {
 function isDemoMode(): boolean {
   return (
     process.env.DEMO_MODE === 'true' ||
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.SUPABASE_SERVICE_ROLE_KEY
+    !process.env.NEXT_PUBLIC_CONVEX_URL
   );
 }
 
-function getSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !key) {
-    throw new Error('Supabase credentials not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
-  }
-
-  return createClient(url, key);
-}
-
-function rowToGymConfig(row: Record<string, unknown>): GymConfig {
+function convexGymToConfig(row: Record<string, unknown>): GymConfig {
   return {
-    id: String(row.id ?? ''),
+    id: String(row._id ?? ''),
     slug: String(row.slug ?? ''),
     name: String(row.name ?? ''),
-    logoUrl: String(row.logo_url ?? ''),
-    primaryColor: String(row.primary_color ?? '#1A56DB'),
-    trainerName: String(row.trainer_name ?? ''),
-    trainerEmail: String(row.trainer_email ?? ''),
-    adminEmail: String(row.admin_email ?? ''),
-    googleSheetId: String(row.google_sheet_id ?? ''),
-    isActive: Boolean(row.is_active ?? true),
+    logoUrl: String(row.logoUrl ?? ''),
+    primaryColor: String(row.primaryColor ?? '#1A56DB'),
+    trainerName: String(row.trainerName ?? ''),
+    trainerEmail: String(row.trainerEmail ?? ''),
+    adminEmail: String(row.adminEmail ?? ''),
+    googleSheetId: String(row.googleSheetId ?? ''),
+    isActive: Boolean(row.isActive ?? true),
     plan: (row.plan as GymConfig['plan']) ?? 'starter',
-    createdAt: String(row.created_at ?? ''),
+    createdAt: row.createdAt ? new Date(row.createdAt as number).toISOString() : '',
   };
 }
 
@@ -72,19 +61,14 @@ export async function getGymConfig(slug: string): Promise<GymConfig | null> {
   }
 
   try {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase
-      .from('gyms')
-      .select('*')
-      .eq('slug', slug)
-      .single();
+    const convex = getConvexClient();
+    const gym = await convex.query(api.gyms.getBySlug, { slug });
 
-    if (error || !data) {
-      console.error('[gym-config] Supabase error:', error?.message ?? 'No data');
+    if (!gym) {
       return null;
     }
 
-    const config = rowToGymConfig(data as Record<string, unknown>);
+    const config = convexGymToConfig(gym as unknown as Record<string, unknown>);
     configCache.set(slug, { config, fetchedAt: Date.now() });
     return config;
   } catch (err) {
@@ -94,16 +78,19 @@ export async function getGymConfig(slug: string): Promise<GymConfig | null> {
 }
 
 export async function getGymConfigByAdminEmail(email: string): Promise<GymConfig | null> {
-  try {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase
-      .from('gyms')
-      .select('*')
-      .eq('admin_email', email)
-      .single();
+  if (isDemoMode()) {
+    if (email === DEMO_GYM_CONFIG.adminEmail) {
+      return DEMO_GYM_CONFIG;
+    }
+    return null;
+  }
 
-    if (error || !data) return null;
-    return rowToGymConfig(data as Record<string, unknown>);
+  try {
+    const convex = getConvexClient();
+    const gym = await convex.query(api.gyms.getByAdminEmail, { email });
+
+    if (!gym) return null;
+    return convexGymToConfig(gym as unknown as Record<string, unknown>);
   } catch (err) {
     console.error('[gym-config] Failed to fetch gym by admin email:', err);
     return null;
@@ -117,15 +104,11 @@ export async function getGymPasswordHash(slug: string): Promise<string | null> {
   }
 
   try {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase
-      .from('gyms')
-      .select('admin_password_hash')
-      .eq('slug', slug)
-      .single();
+    const convex = getConvexClient();
+    const gym = await convex.query(api.gyms.getBySlug, { slug });
 
-    if (error || !data) return null;
-    return String((data as Record<string, unknown>).admin_password_hash ?? '');
+    if (!gym) return null;
+    return (gym as unknown as Record<string, unknown>).adminPasswordHash as string ?? '';
   } catch (err) {
     console.error('[gym-config] Failed to fetch password hash:', err);
     return null;

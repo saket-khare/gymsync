@@ -8,7 +8,7 @@ export interface GymConfig {
   trainerName: string;
   trainerEmail: string;
   adminEmail: string;
-  googleSheetId: string;
+  googleSheetId?: string;
   isActive: boolean;
   plan: 'starter' | 'growth' | 'pro';
   createdAt: string;

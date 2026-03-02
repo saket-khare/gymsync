@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fullMemberSchema } from '@/lib/validations';
-import { appendRow, memberFormDataToSheetRow } from '@/lib/google-sheets';
 import { getGymConfig } from '@/lib/gym-config';
+import { getConvexClient } from '@/lib/convex';
+import { api } from '@/convex/_generated/api';
 import { normalizePhone } from '@/lib/utils';
 import type { GenerateRequestBody } from '@/types';
+import type { Id } from '@/convex/_generated/dataModel';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     memberData.city = memberData.city.trim();
     memberData.submittedAt = new Date().toISOString();
 
-    // Fetch gym config to get sheet ID
+    // Fetch gym config
     const gymConfig = await getGymConfig(memberData.gymSlug);
     if (!gymConfig) {
       return NextResponse.json(
@@ -46,14 +48,51 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Generate unique row ID
     const rowId = crypto.randomUUID();
-    const isDemoMode = process.env.DEMO_MODE === 'true' || !gymConfig.googleSheetId;
+    const isDemoMode = process.env.DEMO_MODE === 'true' || !process.env.NEXT_PUBLIC_CONVEX_URL;
 
-    // Write to Google Sheets (skip in demo mode)
-    if (!isDemoMode && gymConfig.googleSheetId) {
-      const sheetRow = memberFormDataToSheetRow(memberData, rowId);
-      await appendRow(gymConfig.googleSheetId, sheetRow);
+    // Write to Convex (skip in demo mode)
+    if (!isDemoMode) {
+      const convex = getConvexClient();
+      await convex.mutation(api.members.create, {
+        gymId: gymConfig.id as Id<"gyms">,
+        gymSlug: memberData.gymSlug,
+        rowId,
+        firstName: memberData.firstName,
+        lastName: memberData.lastName,
+        email: memberData.email,
+        phone: memberData.phone,
+        age: memberData.age,
+        gender: memberData.gender,
+        city: memberData.city,
+        primaryGoal: memberData.primaryGoal,
+        goalUrgency: memberData.goalUrgency,
+        timelineMonths: memberData.timelineMonths,
+        goalDetails: memberData.goalDetails,
+        weightKg: memberData.weightKg,
+        heightCm: memberData.heightCm,
+        bodyFatPercent: memberData.bodyFatPercent,
+        selfRatedFitness: memberData.selfRatedFitness,
+        gymExperience: memberData.gymExperience,
+        dietType: memberData.dietType,
+        sleepHoursPerNight: memberData.sleepHoursPerNight,
+        stressLevel: memberData.stressLevel,
+        occupationType: memberData.occupationType,
+        medicalConditions: memberData.medicalConditions,
+        injuries: memberData.injuries,
+        foodAllergies: memberData.foodAllergies,
+        daysPerWeekAvailable: memberData.daysPerWeekAvailable,
+        sessionDurationMinutes: memberData.sessionDurationMinutes,
+        hasHomeEquipment: memberData.hasHomeEquipment,
+        interestedInPT: memberData.interestedInPT,
+        budgetForSupplements: memberData.budgetForSupplements,
+        pushUpCount: memberData.pushUpCount,
+        plankHoldSeconds: memberData.plankHoldSeconds,
+        flexibilityTest: memberData.flexibilityTest,
+        restingHeartRate: memberData.restingHeartRate,
+        submittedAt: memberData.submittedAt,
+      });
     } else {
-      console.log('[submit] Demo mode: skipping Google Sheets write.');
+      console.log('[submit] Demo mode: skipping Convex write.');
     }
 
     // Fire-and-forget: trigger AI generation pipeline (skip in demo mode)
