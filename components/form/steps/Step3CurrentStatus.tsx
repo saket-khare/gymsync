@@ -5,20 +5,11 @@ import { useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { FITNESS_LEVELS, EXPERIENCE_OPTIONS, STEP_META } from '@/lib/onboarding-steps';
 
 interface Step3CurrentStatusProps {
   primaryColor?: string;
 }
-
-const FITNESS_EMOJIS = ['😴', '🚶', '🏃', '🔥', '⚡'];
-const FITNESS_LABELS = ['Couch potato', 'Light active', 'Moderately fit', 'Very fit', 'Athlete'];
-
-const EXPERIENCE_OPTIONS = [
-  { value: 'complete_beginner', label: 'Never Trained', desc: 'First time at a gym' },
-  { value: 'beginner', label: 'Beginner', desc: '< 1 year of training' },
-  { value: 'intermediate', label: 'Intermediate', desc: '1–3 years of training' },
-  { value: 'advanced', label: 'Advanced', desc: '3+ years, serious lifter' },
-];
 
 export default function Step3CurrentStatus({ primaryColor = '#1A56DB' }: Step3CurrentStatusProps) {
   const {
@@ -59,10 +50,8 @@ export default function Step3CurrentStatus({ primaryColor = '#1A56DB' }: Step3Cu
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Where are you right now?</h2>
-        <p className="text-gray-500 mt-1 text-sm">
-          Honest numbers help us build an accurate plan.
-        </p>
+        <h2 className="text-2xl font-bold text-gray-900">{STEP_META[2].title}</h2>
+        <p className="text-gray-500 mt-1 text-sm">{STEP_META[2].subtitle}</p>
       </div>
 
       {/* Weight */}
@@ -181,26 +170,26 @@ export default function Step3CurrentStatus({ primaryColor = '#1A56DB' }: Step3Cu
           How fit do you feel right now?
         </Label>
         <div className="flex gap-2">
-          {[1, 2, 3, 4, 5].map((n) => (
+          {FITNESS_LEVELS.map((level) => (
             <button
-              key={n}
+              key={level.value}
               type="button"
-              onClick={() => setValue('selfRatedFitness', n, { shouldValidate: true })}
+              onClick={() => setValue('selfRatedFitness', level.value, { shouldValidate: true })}
               className={cn(
                 'flex-1 flex flex-col items-center p-2 rounded-xl border-2 transition-all duration-200',
-                selectedFitness === n
+                selectedFitness === level.value
                   ? 'border-current shadow-sm'
                   : 'border-gray-200 hover:border-gray-300',
               )}
               style={
-                selectedFitness === n
+                selectedFitness === level.value
                   ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
                   : {}
               }
             >
-              <span className="text-xl">{FITNESS_EMOJIS[n - 1]}</span>
+              <span className="text-xl">{level.emoji}</span>
               <span className="text-xs text-gray-500 mt-1 leading-tight text-center">
-                {FITNESS_LABELS[n - 1]}
+                {level.label}
               </span>
             </button>
           ))}

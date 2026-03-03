@@ -7,6 +7,7 @@ import {
   integer,
   real,
   timestamp,
+  date,
   jsonb,
   index,
 } from 'drizzle-orm/pg-core';
@@ -30,6 +31,10 @@ const budgetEnum = ['none', 'low', 'medium', 'high'] as const;
 const flexibilityEnum = ['touch_toes', 'almost', 'cant_reach'] as const;
 const processingStatusEnum = ['pending', 'processing', 'processed', 'failed'] as const;
 const upsellSignalEnum = ['HIGH', 'MEDIUM', 'LOW'] as const;
+
+export const subscriptionPlanEnum = ['monthly', 'quarterly', 'half_yearly', 'annual'] as const;
+export const subscriptionStatusEnum = ['active', 'expired', 'cancelled', 'paused'] as const;
+export const paymentMethodEnum = ['cash', 'upi', 'card', 'bank_transfer', 'other'] as const;
 
 export const gyms = pgTable(
   'gyms',
@@ -152,6 +157,26 @@ export const mealPlans = pgTable(
   ]
 );
 
+export const mealPlanTemplates = pgTable(
+  'meal_plan_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    gymId: uuid('gym_id')
+      .notNull()
+      .references(() => gyms.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 255 }).notNull(),
+    dietType: varchar('diet_type', { length: 32 }),
+    goal: varchar('goal', { length: 64 }),
+    weeklyCalorieTarget: integer('weekly_calorie_target'),
+    days: jsonb('days').notNull(),
+    generalGuidelines: jsonb('general_guidelines').$type<string[]>(),
+    foodsToAvoid: jsonb('foods_to_avoid').$type<string[]>(),
+    isBuiltIn: boolean('is_built_in').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('meal_plan_templates_gym_id_idx').on(t.gymId)]
+);
+
 export const trainerBriefs = pgTable(
   'trainer_briefs',
   {
@@ -180,7 +205,43 @@ export const trainerBriefs = pgTable(
   ]
 );
 
+export const subscriptions = pgTable(
+  'subscriptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    gymId: uuid('gym_id')
+      .notNull()
+      .references(() => gyms.id, { onDelete: 'cascade' }),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    planType: varchar('plan_type', { length: 32 })
+      .notNull()
+      .$type<(typeof subscriptionPlanEnum)[number]>(),
+    startDate: date('start_date').notNull(),
+    endDate: date('end_date').notNull(),
+    amountPaid: integer('amount_paid').notNull(), // in INR (whole rupees)
+    paymentMethod: varchar('payment_method', { length: 32 })
+      .notNull()
+      .$type<(typeof paymentMethodEnum)[number]>(),
+    status: varchar('status', { length: 32 })
+      .notNull()
+      .default('active')
+      .$type<(typeof subscriptionStatusEnum)[number]>(),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('subscriptions_gym_id_idx').on(t.gymId),
+    index('subscriptions_member_id_idx').on(t.memberId),
+    index('subscriptions_status_idx').on(t.status),
+    index('subscriptions_end_date_idx').on(t.endDate),
+  ]
+);
+
 export type GymRow = typeof gyms.$inferSelect;
 export type MemberRow = typeof members.$inferSelect;
 export type MealPlanRow = typeof mealPlans.$inferSelect;
+export type MealPlanTemplateRow = typeof mealPlanTemplates.$inferSelect;
 export type TrainerBriefRow = typeof trainerBriefs.$inferSelect;
+export type SubscriptionRow = typeof subscriptions.$inferSelect;

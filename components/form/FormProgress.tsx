@@ -2,21 +2,13 @@
 
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { STEP_LABELS, STEP_META } from '@/lib/onboarding-steps';
 
 interface FormProgressProps {
   currentStep: number;
   totalSteps: number;
   primaryColor?: string;
 }
-
-const STEP_LABELS = [
-  'Personal',
-  'Goals',
-  'Current Status',
-  'Lifestyle',
-  'Commitment',
-  'Fitness Test',
-];
 
 export default function FormProgress({
   currentStep,
@@ -30,7 +22,7 @@ export default function FormProgress({
       <div className="flex justify-between items-center mb-2">
         <span className="text-sm font-medium text-gray-600">
           Step {currentStep} of {totalSteps}
-          {currentStep === 6 && (
+          {STEP_META[currentStep - 1]?.optional && (
             <span className="ml-1 text-xs text-gray-400">(Optional)</span>
           )}
         </span>

@@ -2,40 +2,33 @@
 
 import { useState } from 'react';
 import type { GymConfig, SheetRow } from '@/types';
-import {
-  AdminNav,
-  StatsCards,
-  MemberFilters,
-  MembersTable,
-  GymConfigCard,
-} from './components';
+import type { AdminPage } from './components/AdminSidebar';
+import { AdminSidebar } from './components/AdminSidebar';
+import { OverviewPage, type OverviewStats } from './components/OverviewPage';
+import { MembersPage } from './components/MembersPage';
+import { MealPlansPage } from './components/MealPlansPage';
+import { SubscriptionsPage } from './components/SubscriptionsPage';
+import { SettingsPage } from './components/SettingsPage';
+
+export interface MealPlanByRowId {
+  [rowId: string]: { generatedAt: string };
+}
 
 interface AdminDashboardProps {
   gymConfig: GymConfig;
   members: SheetRow[];
-  stats: {
-    total: number;
-    thisMonth: number;
-    emailsSent: number;
-    highPTLeads: number;
-  };
+  stats: OverviewStats;
+  mealPlanByRowId?: MealPlanByRowId;
 }
 
-export default function AdminDashboard({ gymConfig, members, stats }: AdminDashboardProps) {
-  const [expandedRow, setExpandedRow] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'processed' | 'failed'>('all');
-  const [ptFilter, setPtFilter] = useState<'all' | 'yes' | 'maybe'>('all');
+export default function AdminDashboard({
+  gymConfig,
+  members,
+  stats,
+  mealPlanByRowId = {},
+}: AdminDashboardProps) {
+  const [activePage, setActivePage] = useState<AdminPage>('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const filtered = members.filter((m) => {
-    if (filter !== 'all' && m.processingStatus !== filter) return false;
-    if (ptFilter !== 'all' && m.interestedInPT !== ptFilter) return false;
-    return true;
-  });
-
-  function handleExpandToggle(rowId: string) {
-    setExpandedRow((prev) => (prev === rowId ? null : rowId));
-  }
 
   function refresh() {
     setIsRefreshing(true);
@@ -44,28 +37,37 @@ export default function AdminDashboard({ gymConfig, members, stats }: AdminDashb
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0E0E11] text-gray-900 dark:text-zinc-100 font-sans selection:bg-indigo-500/30">
-      <AdminNav gymConfig={gymConfig} isRefreshing={isRefreshing} onRefresh={refresh} />
+      <AdminSidebar
+        gymConfig={gymConfig}
+        activePage={activePage}
+        onPageChange={setActivePage}
+        isRefreshing={isRefreshing}
+        onRefresh={refresh}
+      />
 
-      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
-        <StatsCards stats={stats} />
-
-        <MemberFilters
-          filter={filter}
-          ptFilter={ptFilter}
-          onFilterChange={setFilter}
-          onPtFilterChange={setPtFilter}
-          memberCount={filtered.length}
-        />
-
-        <MembersTable
-          members={filtered}
-          gymConfig={gymConfig}
-          expandedRow={expandedRow}
-          onExpandToggle={handleExpandToggle}
-        />
-
-        <GymConfigCard gymConfig={gymConfig} />
-      </div>
+      <main className="pt-14 md:pt-6 md:pl-[240px] min-h-screen">
+        <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
+          {activePage === 'overview' && (
+            <OverviewPage stats={stats} members={members} />
+          )}
+          {activePage === 'members' && (
+            <MembersPage members={members} gymConfig={gymConfig} />
+          )}
+          {activePage === 'mealPlans' && (
+            <MealPlansPage
+              members={members}
+              gymConfig={gymConfig}
+              mealPlanByRowId={mealPlanByRowId}
+            />
+          )}
+          {activePage === 'subscriptions' && (
+            <SubscriptionsPage members={members} gymConfig={gymConfig} />
+          )}
+          {activePage === 'settings' && (
+            <SettingsPage gymConfig={gymConfig} />
+          )}
+        </div>
+      </main>
     </div>
   );
 }

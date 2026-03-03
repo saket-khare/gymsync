@@ -1,6 +1,7 @@
-import { eq } from 'drizzle-orm';
+import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import { getDb } from './client';
-import { gyms, members, mealPlans, trainerBriefs } from './schema';
+import { gyms, members, mealPlans, mealPlanTemplates, trainerBriefs, subscriptions } from './schema';
+import type { SubscriptionRow } from './schema';
 import type { GymConfig } from '@/types';
 
 // ─── Gyms ─────────────────────────────────────────────────────────────────
@@ -186,6 +187,82 @@ export async function listMembersByGym(gymSlug: string) {
 
 // ─── Meal plans & trainer briefs ───────────────────────────────────────────
 
+/** Returns meal plan rows for a gym (joined with members to get rowId). */
+export async function listMealPlansByGym(gymSlug: string) {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: mealPlans.id,
+      memberId: mealPlans.memberId,
+      memberName: mealPlans.memberName,
+      goal: mealPlans.goal,
+      weeklyCalorieTarget: mealPlans.weeklyCalorieTarget,
+      generatedAt: mealPlans.generatedAt,
+      rowId: members.rowId,
+    })
+    .from(mealPlans)
+    .innerJoin(members, eq(mealPlans.memberId, members.id))
+    .where(eq(members.gymSlug, gymSlug));
+  return rows;
+}
+
+export async function getMealPlanByMemberId(memberId: string) {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(mealPlans)
+    .where(eq(mealPlans.memberId, memberId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Get meal plan for a member by rowId (and optional gymSlug for auth). */
+export async function getMealPlanByRowId(rowId: string, gymSlug?: string) {
+  const member = await getMemberByRowId(rowId);
+  if (!member) return null;
+  if (gymSlug && member.gymSlug !== gymSlug) return null;
+  return getMealPlanByMemberId(member.id);
+}
+
+// ─── Meal plan templates (trainer-saved) ───────────────────────────────────
+
+export async function listMealPlanTemplatesByGym(gymId: string) {
+  const db = getDb();
+  return db
+    .select()
+    .from(mealPlanTemplates)
+    .where(eq(mealPlanTemplates.gymId, gymId))
+    .orderBy(desc(mealPlanTemplates.createdAt));
+}
+
+export async function createMealPlanTemplate(args: {
+  gymId: string;
+  name: string;
+  dietType?: string;
+  goal?: string;
+  weeklyCalorieTarget?: number;
+  days: unknown;
+  generalGuidelines?: string[];
+  foodsToAvoid?: string[];
+}) {
+  const db = getDb();
+  const [row] = await db
+    .insert(mealPlanTemplates)
+    .values({
+      gymId: args.gymId,
+      name: args.name,
+      dietType: args.dietType ?? null,
+      goal: args.goal ?? null,
+      weeklyCalorieTarget: args.weeklyCalorieTarget ?? null,
+      days: args.days,
+      generalGuidelines: args.generalGuidelines ?? null,
+      foodsToAvoid: args.foodsToAvoid ?? null,
+      isBuiltIn: false,
+    })
+    .returning();
+  return row;
+}
+
 export async function storeMealPlan(args: {
   memberId: string;
   gymId: string;
@@ -240,4 +317,113 @@ export async function storeTrainerBrief(args: {
     baselineTestSummary: args.baselineTestSummary ?? null,
     generatedAt: args.generatedAt,
   });
+}
+
+// ─── Subscriptions ─────────────────────────────────────────────────────────
+
+export type SubscriptionWithMember = SubscriptionRow & {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  rowId: string;
+};
+
+export async function listSubscriptionsByGym(gymId: string): Promise<SubscriptionWithMember[]> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: subscriptions.id,
+      gymId: subscriptions.gymId,
+      memberId: subscriptions.memberId,
+      planType: subscriptions.planType,
+      startDate: subscriptions.startDate,
+      endDate: subscriptions.endDate,
+      amountPaid: subscriptions.amountPaid,
+      paymentMethod: subscriptions.paymentMethod,
+      status: subscriptions.status,
+      notes: subscriptions.notes,
+      createdAt: subscriptions.createdAt,
+      firstName: members.firstName,
+      lastName: members.lastName,
+      email: members.email,
+      phone: members.phone,
+      rowId: members.rowId,
+    })
+    .from(subscriptions)
+    .innerJoin(members, eq(subscriptions.memberId, members.id))
+    .where(eq(subscriptions.gymId, gymId))
+    .orderBy(desc(subscriptions.createdAt));
+  return rows;
+}
+
+export async function getSubscriptionsByMember(memberId: string): Promise<SubscriptionRow[]> {
+  const db = getDb();
+  return db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.memberId, memberId))
+    .orderBy(desc(subscriptions.createdAt));
+}
+
+export async function createSubscription(args: {
+  gymId: string;
+  memberId: string;
+  planType: 'monthly' | 'quarterly' | 'half_yearly' | 'annual';
+  startDate: string;
+  endDate: string;
+  amountPaid: number;
+  paymentMethod: 'cash' | 'upi' | 'card' | 'bank_transfer' | 'other';
+  status?: 'active' | 'expired' | 'cancelled' | 'paused';
+  notes?: string;
+}): Promise<SubscriptionRow> {
+  const db = getDb();
+  const [row] = await db
+    .insert(subscriptions)
+    .values({
+      gymId: args.gymId,
+      memberId: args.memberId,
+      planType: args.planType,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      amountPaid: args.amountPaid,
+      paymentMethod: args.paymentMethod,
+      status: args.status ?? 'active',
+      notes: args.notes ?? null,
+    })
+    .returning();
+  return row;
+}
+
+export async function updateSubscriptionStatus(
+  id: string,
+  status: 'active' | 'expired' | 'cancelled' | 'paused'
+): Promise<void> {
+  const db = getDb();
+  await db.update(subscriptions).set({ status }).where(eq(subscriptions.id, id));
+}
+
+export async function getSubscriptionStats(gymId: string) {
+  const db = getDb();
+  const today = new Date().toISOString().slice(0, 10);
+  const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    .toISOString()
+    .slice(0, 10);
+  const cutoff7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+
+  const all = await db.select().from(subscriptions).where(eq(subscriptions.gymId, gymId));
+
+  const active = all.filter((s) => s.status === 'active');
+  const expiringSoon = active.filter((s) => s.endDate >= today && s.endDate <= cutoff7);
+  const overdue = all.filter((s) => s.status === 'active' && s.endDate < today);
+  const monthlyRevenue = all
+    .filter((s) => s.startDate >= firstOfMonth)
+    .reduce((sum, s) => sum + s.amountPaid, 0);
+
+  return {
+    activeCount: active.length,
+    expiringSoonCount: expiringSoon.length,
+    overdueCount: overdue.length,
+    monthlyRevenue,
+  };
 }

@@ -4,17 +4,11 @@ import { useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { GENDERS, STEP_META } from '@/lib/onboarding-steps';
 
 interface Step1PersonalProps {
   primaryColor?: string;
 }
-
-const GENDERS = [
-  { value: 'male', label: '♂ Male' },
-  { value: 'female', label: '♀ Female' },
-  { value: 'other', label: '⚧ Other' },
-  { value: 'prefer_not_to_say', label: '🤐 Prefer not to say' },
-];
 
 export default function Step1Personal({ primaryColor = '#1A56DB' }: Step1PersonalProps) {
   const {
@@ -29,8 +23,8 @@ export default function Step1Personal({ primaryColor = '#1A56DB' }: Step1Persona
   return (
     <div className="space-y-5">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Let&apos;s get to know you</h2>
-        <p className="text-gray-500 mt-1 text-sm">This takes about 5 minutes.</p>
+        <h2 className="text-2xl font-bold text-gray-900">{STEP_META[0].title}</h2>
+        <p className="text-gray-500 mt-1 text-sm">{STEP_META[0].subtitle}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

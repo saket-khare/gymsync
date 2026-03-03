@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getGymConfig } from '@/lib/gym-config';
-import { listMembersByGym } from '@/lib/db';
+import { listMembersByGym, listMealPlansByGym } from '@/lib/db';
 import AdminDashboard from './AdminDashboard';
 import type { SheetRow } from '@/types';
 
@@ -32,6 +32,7 @@ export default async function AdminGymPage({ params }: Props) {
     const dbMembers = await listMembersByGym(gymSlug);
     // Map DB rows to SheetRow format for compatibility with AdminDashboard
     members = dbMembers.map((m) => ({
+      id: m.id,
       rowId: m.rowId,
       firstName: m.firstName,
       lastName: m.lastName,
@@ -78,6 +79,16 @@ export default async function AdminGymPage({ params }: Props) {
     // DB not configured or empty — show empty state
   }
 
+  let mealPlanByRowId: Record<string, { generatedAt: string }> = {};
+  try {
+    const plans = await listMealPlansByGym(gymSlug);
+    mealPlanByRowId = Object.fromEntries(
+      plans.map((p) => [p.rowId, { generatedAt: p.generatedAt }])
+    );
+  } catch {
+    // ignore
+  }
+
   const now = new Date();
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
@@ -88,15 +99,17 @@ export default async function AdminGymPage({ params }: Props) {
       const d = new Date(m.submittedAt);
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     }).length,
+    pending: members.filter((m) => m.processingStatus === 'pending').length,
     emailsSent: members.filter((m) => m.emailSent).length,
-    highPTLeads: members.filter(
-      (m) =>
-        m.interestedInPT === 'yes' &&
-        (m.gymExperience === 'complete_beginner' || m.gymExperience === 'beginner'),
-    ).length,
+    mealPlansGenerated: members.filter((m) => m.mealPlanGenerated).length,
   };
 
   return (
-    <AdminDashboard gymConfig={gymConfig} members={members} stats={stats} />
+    <AdminDashboard
+      gymConfig={gymConfig}
+      members={members}
+      stats={stats}
+      mealPlanByRowId={mealPlanByRowId}
+    />
   );
 }

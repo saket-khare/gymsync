@@ -64,6 +64,22 @@ export function MemberRowExpanded({ member }: MemberRowExpandedProps) {
         </div>
 
         <div className="space-y-3">
+          <p className="text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
+            Commitment
+          </p>
+          <div className="text-gray-800 dark:text-zinc-200 text-sm space-y-1">
+            <p>
+              PT interest: <span className="capitalize font-medium">{member.interestedInPT}</span>
+            </p>
+            <p className="text-gray-600 dark:text-zinc-400 text-xs">
+              Supplement budget: <span className="capitalize">{member.budgetForSupplements?.replace('_', ' ') ?? '—'}</span>
+              {' · '}
+              Home equipment: {member.hasHomeEquipment ? 'Yes' : 'No'}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
           <p className="text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Lifestyle</p>
           <div>
             <p className="text-gray-800 dark:text-zinc-200 font-medium capitalize">

@@ -14,16 +14,16 @@
 import { neon } from "@neondatabase/serverless";
 import bcrypt from "bcryptjs";
 
-const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
+const DATABASE_URL =
+  process.env.DATABASE_URL || process.env.NEXT_PUBLIC_DATABASE_URL;
 if (!DATABASE_URL) {
   console.error(
-    "DATABASE_URL is required. Set it in .env or pass it when running.",
+    "DATABASE_URL or NEXT_PUBLIC_DATABASE_URL is required. Set it in .env or pass when running.",
   );
   process.exit(1);
 }
 
-// Minimal schema for seed (only gyms table columns we need)
-const sql = neon(NEXT_PUBLIC_DATABASE_URL);
+const sql = neon(DATABASE_URL);
 
 async function seed() {
   const passwordHash = await bcrypt.hash("gymsync2024", 10);

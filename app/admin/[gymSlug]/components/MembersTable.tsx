@@ -5,22 +5,63 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CaretDownIcon as ChevronDown,
   CaretUpIcon as ChevronUp,
+  CaretUpDownIcon as SortIcon,
   ActivityIcon as Activity,
   WarningIcon as AlertTriangle,
   CheckCircleIcon as CheckCircle,
   ClockIcon as Clock,
   BarbellIcon as Dumbbell,
 } from '@phosphor-icons/react';
-import { formatDateTime, goalLabel } from '@/lib/utils';
+import { formatDateTime, goalLabel, dietLabel } from '@/lib/utils';
 import type { GymConfig, SheetRow } from '@/types';
-import { STATUS_STYLES, getUpsellBadgeStyle } from './constants';
+import { STATUS_STYLES } from './constants';
 import { MemberRowExpanded } from './MemberRowExpanded';
+
+export type SortKey = 'name' | 'goal' | 'diet' | 'submitted';
+export type SortDir = 'asc' | 'desc';
 
 interface MembersTableProps {
   members: SheetRow[];
   gymConfig: GymConfig;
   expandedRow: string | null;
   onExpandToggle: (rowId: string) => void;
+  sortKey: SortKey;
+  sortDir: SortDir;
+  onSort: (key: SortKey) => void;
+}
+
+function SortHeader({
+  label,
+  sortKeyForColumn,
+  currentSortKey,
+  sortDir,
+  onSort,
+}: {
+  label: string;
+  sortKeyForColumn: SortKey;
+  currentSortKey: SortKey;
+  sortDir: SortDir;
+  onSort: (key: SortKey) => void;
+}) {
+  const isActive = currentSortKey === sortKeyForColumn;
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(sortKeyForColumn)}
+      className="flex items-center gap-1 font-medium hover:text-gray-700 dark:hover:text-zinc-300 transition-colors"
+    >
+      {label}
+      {isActive ? (
+        sortDir === 'asc' ? (
+          <ChevronUp className="w-3.5 h-3.5" />
+        ) : (
+          <ChevronDown className="w-3.5 h-3.5" />
+        )
+      ) : (
+        <SortIcon className="w-3.5 h-3.5 opacity-50" />
+      )}
+    </button>
+  );
 }
 
 export function MembersTable({
@@ -28,6 +69,9 @@ export function MembersTable({
   gymConfig,
   expandedRow,
   onExpandToggle,
+  sortKey,
+  sortDir,
+  onSort,
 }: MembersTableProps) {
   if (members.length === 0) {
     return (
@@ -67,7 +111,9 @@ export function MembersTable({
                   exit={{ opacity: 0, filter: 'blur(4px)' }}
                   transition={{ duration: 0.2 }}
                   className={`p-4 cursor-pointer transition-colors touch-manipulation ${
-                    isExpanded ? 'bg-gray-100 dark:bg-[#18181b]' : 'active:bg-gray-100 dark:active:bg-[#18181b]/60'
+                    isExpanded
+                      ? 'bg-gray-100 dark:bg-[#18181b]'
+                      : 'active:bg-gray-100 dark:active:bg-[#18181b]/60'
                   }`}
                   onClick={() => onExpandToggle(member.rowId)}
                 >
@@ -81,17 +127,15 @@ export function MembersTable({
                         <div className="font-medium text-sm text-gray-900 dark:text-zinc-200 truncate">
                           {member.firstName} {member.lastName}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-zinc-500 truncate">{member.email}</div>
+                        <div className="text-xs text-gray-500 dark:text-zinc-500 truncate">
+                          {member.email}
+                        </div>
                         <div className="flex flex-wrap gap-2 mt-2">
                           <span className="text-xs text-gray-600 dark:text-zinc-400">
                             {goalLabel(member.primaryGoal)}
                           </span>
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
-                              getUpsellBadgeStyle(member.interestedInPT)
-                            }`}
-                          >
-                            PT: {member.interestedInPT}
+                          <span className="text-xs text-gray-500 dark:text-zinc-500">
+                            {dietLabel(member.dietType)}
                           </span>
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium capitalize ${
@@ -153,12 +197,44 @@ export function MembersTable({
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-gray-200 dark:border-zinc-800/60 text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider bg-gray-50 dark:bg-[#18181b]/50">
-              <th className="px-6 py-3 font-medium">Member</th>
-              <th className="px-6 py-3 font-medium">Primary Goal</th>
-              <th className="px-6 py-3 font-medium">PT Signal</th>
+              <th className="px-6 py-3">
+                <SortHeader
+                  label="Member"
+                  sortKeyForColumn="name"
+                  currentSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={onSort}
+                />
+              </th>
+              <th className="px-6 py-3">
+                <SortHeader
+                  label="Goal"
+                  sortKeyForColumn="goal"
+                  currentSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={onSort}
+                />
+              </th>
+              <th className="px-6 py-3">
+                <SortHeader
+                  label="Diet"
+                  sortKeyForColumn="diet"
+                  currentSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={onSort}
+                />
+              </th>
               <th className="px-6 py-3 font-medium">Status</th>
-              <th className="px-6 py-3 font-medium">Submitted</th>
-              <th className="px-6 py-3 font-medium text-right" />
+              <th className="px-6 py-3">
+                <SortHeader
+                  label="Submitted"
+                  sortKeyForColumn="submitted"
+                  currentSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={onSort}
+                />
+              </th>
+              <th className="px-6 py-3 font-medium text-right w-12" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-zinc-800/40">
@@ -174,7 +250,9 @@ export function MembersTable({
                       exit={{ opacity: 0, filter: 'blur(4px)' }}
                       transition={{ duration: 0.2 }}
                       className={`group cursor-pointer transition-colors ${
-                        isExpanded ? 'bg-gray-100 dark:bg-[#18181b]' : 'hover:bg-gray-50 dark:hover:bg-[#18181b]/60'
+                        isExpanded
+                          ? 'bg-gray-100 dark:bg-[#18181b]'
+                          : 'hover:bg-gray-50 dark:hover:bg-[#18181b]/60'
                       }`}
                       onClick={() => onExpandToggle(member.rowId)}
                     >
@@ -188,7 +266,9 @@ export function MembersTable({
                             <div className="font-medium text-sm text-gray-900 dark:text-zinc-200 group-hover:text-gray-800 dark:group-hover:text-white transition-colors">
                               {member.firstName} {member.lastName}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">{member.email}</div>
+                            <div className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">
+                              {member.email}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -198,12 +278,8 @@ export function MembersTable({
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            getUpsellBadgeStyle(member.interestedInPT)
-                          }`}
-                        >
-                          PT: {member.interestedInPT}
+                        <span className="text-sm text-gray-600 dark:text-zinc-400">
+                          {dietLabel(member.dietType)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -231,7 +307,14 @@ export function MembersTable({
                         {member.submittedAt ? formatDateTime(member.submittedAt) : '—'}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors p-1 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-800">
+                        <button
+                          type="button"
+                          className="text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors p-1 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-800"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onExpandToggle(member.rowId);
+                          }}
+                        >
                           {isExpanded ? (
                             <ChevronUp className="w-4 h-4" />
                           ) : (

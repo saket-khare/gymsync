@@ -123,6 +123,7 @@ export interface TrainerBrief {
 
 // For Google Sheets rows
 export interface SheetRow extends MemberFormData {
+  id?: string; // DB UUID — present when loaded from Postgres
   rowId: string;
   processingStatus: 'pending' | 'processing' | 'processed' | 'failed';
   mealPlanGenerated: boolean;

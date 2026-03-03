@@ -6,27 +6,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import {
+  DIET_OPTIONS,
+  OCCUPATION_OPTIONS,
+  STRESS_LABELS,
+  STEP_META,
+} from '@/lib/onboarding-steps';
 
 interface Step4LifestyleProps {
   primaryColor?: string;
 }
-
-const DIET_OPTIONS = [
-  { value: 'vegetarian', label: 'Vegetarian', icon: '🥦' },
-  { value: 'non_vegetarian', label: 'Non-Veg', icon: '🍗' },
-  { value: 'vegan', label: 'Vegan', icon: '🌱' },
-  { value: 'eggetarian', label: 'Eggetarian', icon: '🥚' },
-  { value: 'keto', label: 'Keto', icon: '🥑' },
-  { value: 'other', label: 'Other', icon: '🍽️' },
-];
-
-const OCCUPATION_OPTIONS = [
-  { value: 'desk_job', label: 'Desk Job', icon: '💻' },
-  { value: 'active_job', label: 'Active Job', icon: '🏗️' },
-  { value: 'student', label: 'Student', icon: '📚' },
-  { value: 'freelance', label: 'Freelance', icon: '🎯' },
-  { value: 'other', label: 'Other', icon: '🔮' },
-];
 
 export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4LifestyleProps) {
   const {
@@ -42,15 +31,11 @@ export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4Lifest
   const sleepVal = watch('sleepHoursPerNight') ?? 7;
   const stressVal = watch('stressLevel') ?? 3;
 
-  const STRESS_LABELS = ['Very Low', 'Low', 'Moderate', 'High', 'Very High'];
-
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Tell us about your lifestyle</h2>
-        <p className="text-gray-500 mt-1 text-sm">
-          The more you tell us, the better your plan will be.
-        </p>
+        <h2 className="text-2xl font-bold text-gray-900">{STEP_META[3].title}</h2>
+        <p className="text-gray-500 mt-1 text-sm">{STEP_META[3].subtitle}</p>
       </div>
 
       {/* Diet Type */}
@@ -123,7 +108,7 @@ export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4Lifest
         <Label className="text-sm font-medium text-gray-700">
           Daily stress level:{' '}
           <span style={{ color: primaryColor }} className="font-bold">
-            {STRESS_LABELS[(stressVal ?? 3) - 1]}
+            {STRESS_LABELS[(stressVal ?? 3) - 1] ?? 'Moderate'}
           </span>
         </Label>
         <div className="flex gap-2">

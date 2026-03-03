@@ -4,16 +4,11 @@ import { useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { FLEXIBILITY_OPTIONS, STEP_META } from '@/lib/onboarding-steps';
 
 interface Step6FitnessTestProps {
   primaryColor?: string;
 }
-
-const FLEXIBILITY_OPTIONS = [
-  { value: 'touch_toes', label: 'Can touch toes', icon: '🤸', desc: 'Great flexibility' },
-  { value: 'almost', label: 'Almost there', icon: '😅', desc: 'Getting close' },
-  { value: 'cant_reach', label: "Can't reach", icon: '😬', desc: 'Needs work' },
-];
 
 export default function Step6FitnessTest({ primaryColor = '#1A56DB' }: Step6FitnessTestProps) {
   const {
@@ -28,14 +23,13 @@ export default function Step6FitnessTest({ primaryColor = '#1A56DB' }: Step6Fitn
   return (
     <div className="space-y-6">
       <div className="mb-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 mb-3">
-          Optional Step
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900">Quick Fitness Baseline</h2>
-        <p className="text-gray-500 mt-1 text-sm">
-          Let your trainer see your starting point. Takes 5 minutes — they&apos;ll guide you
-          through this on Day 1.
-        </p>
+        {STEP_META[5].optional && (
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 mb-3">
+            Optional Step
+          </div>
+        )}
+        <h2 className="text-2xl font-bold text-gray-900">{STEP_META[5].title}</h2>
+        <p className="text-gray-500 mt-1 text-sm">{STEP_META[5].subtitle}</p>
       </div>
 
       <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">

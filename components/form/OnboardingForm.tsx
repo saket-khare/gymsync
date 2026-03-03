@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { GymConfig } from '@/types';
+import { TOTAL_STEPS } from '@/lib/onboarding-steps';
 import {
   step1Schema,
   step2Schema,
@@ -35,8 +36,6 @@ const STEP_SCHEMAS = [
   step5Schema,
   step6Schema,
 ];
-
-const TOTAL_STEPS = 6;
 
 export default function OnboardingForm({ gymConfig }: OnboardingFormProps) {
   const router = useRouter();

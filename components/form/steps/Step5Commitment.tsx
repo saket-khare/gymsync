@@ -3,39 +3,18 @@
 import { useFormContext } from 'react-hook-form';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import {
+  DAYS,
+  DAY_COUNT_MAP,
+  DURATION_OPTIONS,
+  PT_OPTIONS,
+  SUPPLEMENT_OPTIONS,
+  STEP_META,
+} from '@/lib/onboarding-steps';
 
 interface Step5CommitmentProps {
   primaryColor?: string;
 }
-
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const DAY_VALUES: Record<number, 2 | 3 | 4 | 5 | 6> = {
-  2: 2,
-  3: 3,
-  4: 4,
-  5: 5,
-  6: 6,
-};
-
-const DURATION_OPTIONS = [
-  { value: 30, label: '30 min', desc: 'Quick & efficient' },
-  { value: 45, label: '45 min', desc: 'Focused session' },
-  { value: 60, label: '1 hour', desc: 'Standard workout' },
-  { value: 90, label: '90 min', desc: 'Full deep work' },
-];
-
-const PT_OPTIONS = [
-  { value: 'yes', label: 'Yes, definitely', icon: '🙌', desc: 'I want a personal trainer' },
-  { value: 'maybe', label: 'Tell me more', icon: '🤔', desc: "I'm curious about PT" },
-  { value: 'no', label: "I'll train solo", icon: '💪', desc: 'I prefer self-directed' },
-];
-
-const SUPPLEMENT_OPTIONS = [
-  { value: 'none', label: 'No budget', desc: 'Food only' },
-  { value: 'low', label: '₹500–1k/mo', desc: 'Basic only' },
-  { value: 'medium', label: '₹1k–3k/mo', desc: 'Quality picks' },
-  { value: 'high', label: '₹3k+/mo', desc: 'Full stack' },
-];
 
 export default function Step5Commitment({ primaryColor = '#1A56DB' }: Step5CommitmentProps) {
   const {
@@ -60,8 +39,8 @@ export default function Step5Commitment({ primaryColor = '#1A56DB' }: Step5Commi
 
     const count = Math.min(Math.max(updated.length, 2), 6);
     setValue('_selectedDays', updated);
-    if (count in DAY_VALUES) {
-      setValue('daysPerWeekAvailable', DAY_VALUES[count as keyof typeof DAY_VALUES] ?? 3, {
+    if (count in DAY_COUNT_MAP) {
+      setValue('daysPerWeekAvailable', DAY_COUNT_MAP[count as keyof typeof DAY_COUNT_MAP] ?? 3, {
         shouldValidate: true,
       });
     }
@@ -70,10 +49,8 @@ export default function Step5Commitment({ primaryColor = '#1A56DB' }: Step5Commi
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Let&apos;s plan your schedule</h2>
-        <p className="text-gray-500 mt-1 text-sm">
-          Let&apos;s make a plan that actually fits your life.
-        </p>
+        <h2 className="text-2xl font-bold text-gray-900">{STEP_META[4].title}</h2>
+        <p className="text-gray-500 mt-1 text-sm">{STEP_META[4].subtitle}</p>
       </div>
 
       {/* Days selector */}
