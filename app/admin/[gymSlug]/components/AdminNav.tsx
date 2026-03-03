@@ -2,6 +2,7 @@
 
 import { signOut } from 'next-auth/react';
 import { ArrowsClockwiseIcon as RefreshCw, SignOutIcon as LogOut } from '@phosphor-icons/react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { TestEmailButton } from './TestEmailButton';
 import type { GymConfig } from '@/types';
 
@@ -16,7 +17,7 @@ export function AdminNav({ gymConfig, isRefreshing, onRefresh }: AdminNavProps) 
     gymConfig.primaryColor === '#1A56DB' ? '#5E6AD2' : (gymConfig.primaryColor ?? '#5E6AD2');
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#0E0E11]/95 backdrop-blur-md border-b border-zinc-800/60 px-4 py-2.5 md:px-6 md:py-3 flex items-center justify-between gap-2 min-h-[52px]">
+    <nav className="sticky top-0 z-50 bg-white/95 dark:bg-[#0E0E11]/95 backdrop-blur-md border-b border-gray-200 dark:border-zinc-800/60 px-4 py-2.5 md:px-6 md:py-3 flex items-center justify-between gap-2 min-h-[52px]">
       <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
         {gymConfig.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -30,27 +31,28 @@ export function AdminNav({ gymConfig, isRefreshing, onRefresh }: AdminNavProps) 
           </div>
         )}
         <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
-          <h1 className="font-medium text-zinc-100 text-xs md:text-sm tracking-tight truncate">
+          <h1 className="font-medium text-gray-900 dark:text-zinc-100 text-xs md:text-sm tracking-tight truncate">
             {gymConfig.name}
           </h1>
-          <span className="text-zinc-700 hidden sm:inline">/</span>
-          <p className="text-xs md:text-sm text-zinc-400 hidden sm:inline">Dashboard</p>
+          <span className="text-gray-400 dark:text-zinc-700 hidden sm:inline">/</span>
+          <p className="text-xs md:text-sm text-gray-500 dark:text-zinc-400 hidden sm:inline">Dashboard</p>
         </div>
       </div>
       <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
+        <ThemeToggle />
         <TestEmailButton trainerEmail={gymConfig.trainerEmail} />
-        <div className="w-px h-4 bg-zinc-800 hidden sm:block" />
+        <div className="w-px h-4 bg-gray-200 dark:bg-zinc-800 hidden sm:block" />
         <button
           onClick={onRefresh}
           disabled={isRefreshing}
-          className="text-zinc-400 hover:text-zinc-200 transition-colors p-2 -m-2 md:p-1 touch-manipulation"
+          className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors p-2 -m-2 md:p-1 touch-manipulation"
           title="Refresh dashboard"
         >
           <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
         <button
           onClick={() => signOut({ callbackUrl: '/admin/login' })}
-          className="text-zinc-400 hover:text-zinc-200 transition-colors p-2 -m-2 md:p-1 touch-manipulation"
+          className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors p-2 -m-2 md:p-1 touch-manipulation"
           title="Sign out"
         >
           <LogOut className="w-4 h-4" />

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Loader2 } from 'lucide-react';
 
 export default function AdminLoginPage() {
@@ -40,18 +41,21 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-[#0E0E11] px-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-[380px]">
         <div className="text-center mb-8">
           <div className="text-4xl mb-3">🏋️</div>
-          <h1 className="text-2xl font-bold text-gray-900">GymSync Admin</h1>
-          <p className="text-gray-500 text-sm mt-1">Sign in to your gym dashboard</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">GymSync Admin</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Sign in to your gym dashboard</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="bg-white dark:bg-[#131316] rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">Gym Slug</Label>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Gym Slug</Label>
               <Input
                 value={gymSlug}
                 onChange={(e) => setGymSlug(e.target.value)}
@@ -65,7 +69,7 @@ export default function AdminLoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">Password</Label>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</Label>
               <Input
                 type="password"
                 value={password}
@@ -98,11 +102,11 @@ export default function AdminLoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
           Powered by GymSync
         </p>
-        <p className="text-center text-xs text-gray-400 mt-2">
-          Demo: slug <code className="bg-gray-100 px-1 rounded">demo-gym</code>, password <code className="bg-gray-100 px-1 rounded">gymsync2024</code> (after seeding Convex, or set DEMO_MODE=true)
+        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-2">
+          Demo: slug <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">demo-gym</code>, password <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">gymsync2024</code> (after seeding Convex, or set DEMO_MODE=true)
         </p>
       </div>
     </main>

@@ -29,16 +29,16 @@ export function StatsCards({ stats }: StatsCardsProps) {
       {STAT_ITEMS.map(({ label, key, icon: Icon }) => (
         <div
           key={label}
-          className="bg-[#131316] border border-zinc-800/60 rounded-xl p-4 sm:p-5 shadow-sm relative overflow-hidden group"
+          className="bg-white dark:bg-[#131316] border border-gray-200 dark:border-zinc-800/60 rounded-xl p-4 sm:p-5 shadow-sm relative overflow-hidden group"
         >
-          <div className="absolute top-0 right-0 p-3 sm:p-5 opacity-20 group-hover:opacity-40 transition-opacity">
-            <Icon className="w-6 h-6 sm:w-8 sm:h-8" />
+          <div className="absolute top-0 right-0 p-3 sm:p-5 opacity-60 group-hover:opacity-90 transition-opacity">
+            <Icon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-500 dark:text-zinc-400" />
           </div>
           <div className="flex flex-col relative z-10">
-            <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
+            <span className="text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2">
               {label}
             </span>
-            <span className="text-2xl sm:text-3xl font-semibold text-zinc-100 tracking-tight">
+            <span className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-zinc-100 tracking-tight">
               {stats[key]}
             </span>
           </div>

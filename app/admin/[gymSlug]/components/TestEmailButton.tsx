@@ -41,7 +41,7 @@ export function TestEmailButton({ trainerEmail }: { trainerEmail: string }) {
         onClick={handleClick}
         disabled={status === 'sending' || !trainerEmail}
         title={trainerEmail ? 'Send a test email to the trainer address' : 'Set trainer email in gym settings'}
-        className="flex items-center gap-2 px-2 py-2 sm:px-3 sm:py-1.5 text-xs font-medium bg-[#1e1e24] hover:bg-[#27272f] border border-zinc-800/80 rounded-md text-zinc-300 transition-colors disabled:opacity-50 touch-manipulation"
+        className="flex items-center gap-2 px-2 py-2 sm:px-3 sm:py-1.5 text-xs font-medium bg-gray-100 dark:bg-[#1e1e24] hover:bg-gray-200 dark:hover:bg-[#27272f] border border-gray-200 dark:border-zinc-800/80 rounded-md text-gray-700 dark:text-zinc-300 transition-colors disabled:opacity-50 touch-manipulation"
       >
         <Send className="w-3.5 h-3.5 shrink-0" />
         <span className="hidden sm:inline">

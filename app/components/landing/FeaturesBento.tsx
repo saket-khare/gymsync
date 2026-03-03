@@ -75,8 +75,8 @@ function InteractiveAIBox() {
   }, []);
 
   return (
-    <div className="mt-6 bg-[#0A0A0A] border border-white/10 rounded-xl p-4 font-mono text-xs text-gray-300 h-48 overflow-hidden relative">
-      <div className="flex items-center gap-2 mb-3 border-b border-white/10 pb-2">
+    <div className="mt-6 bg-gray-900 dark:bg-[#0A0A0A] border border-gray-700 dark:border-white/10 rounded-xl p-4 font-mono text-xs text-gray-300 h-48 overflow-hidden relative">
+      <div className="flex items-center gap-2 mb-3 border-b border-gray-700 dark:border-white/10 pb-2">
         <div className="flex gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
           <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
@@ -96,10 +96,10 @@ export function FeaturesBento() {
   return (
     <section className="py-24 px-6 max-w-6xl mx-auto">
       <div className="text-center mb-16">
-        <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight mb-4">
+        <h2 className="text-3xl md:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-4">
           Everything your gym needs
         </h2>
-        <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+        <p className="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto">
           Built for purpose. Designed for speed. Powered by AI agents to automate the manual work.
         </p>
       </div>
@@ -112,16 +112,16 @@ export function FeaturesBento() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: i * 0.1 }}
-            className={`group relative overflow-hidden rounded-2xl bg-white/5 border border-white/10 p-8 hover:bg-white/10 transition-colors ${f.colSpan} ${f.rowSpan} flex flex-col`}
+            className={`group relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 p-8 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors ${f.colSpan} ${f.rowSpan} flex flex-col`}
           >
-            <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-linear-to-br from-gray-100 dark:from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             
             <div className="relative z-10 flex-1 flex flex-col">
-              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6 border border-white/5">
+              <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-white/10 flex items-center justify-center mb-6 border border-gray-200 dark:border-white/5">
                 {f.icon}
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">{f.title}</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">{f.desc}</p>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{f.title}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{f.desc}</p>
               
               {f.interactive && <InteractiveAIBox />}
             </div>
