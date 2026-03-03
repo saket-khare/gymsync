@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fullMemberSchema } from '@/lib/validations';
 import { getGymConfig } from '@/lib/gym-config';
-import { getConvexClient } from '@/lib/convex';
-import { api } from '@/convex/_generated/api';
+import { createMember } from '@/lib/db';
 import { normalizePhone } from '@/lib/utils';
 import type { GenerateRequestBody } from '@/types';
-import type { Id } from '@/convex/_generated/dataModel';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -48,13 +46,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Generate unique row ID
     const rowId = crypto.randomUUID();
-    const isDemoMode = process.env.DEMO_MODE === 'true' || !process.env.NEXT_PUBLIC_CONVEX_URL;
+    const isDemoMode = process.env.DEMO_MODE === 'true' || !process.env.DATABASE_URL;
 
-    // Write to Convex (skip in demo mode)
+    // Write to Neon DB (skip in demo mode)
     if (!isDemoMode) {
-      const convex = getConvexClient();
-      await convex.mutation(api.members.create, {
-        gymId: gymConfig.id as Id<"gyms">,
+      await createMember({
+        gymId: gymConfig.id,
         gymSlug: memberData.gymSlug,
         rowId,
         firstName: memberData.firstName,
@@ -92,7 +89,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         submittedAt: memberData.submittedAt,
       });
     } else {
-      console.log('[submit] Demo mode: skipping Convex write.');
+      console.log('[submit] Demo mode: skipping DB write.');
     }
 
     // Fire-and-forget: trigger AI generation pipeline (skip in demo mode)

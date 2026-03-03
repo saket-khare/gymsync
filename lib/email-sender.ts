@@ -126,6 +126,25 @@ export async function sendFollowUpEmail(params: SendFollowUpEmailParams): Promis
   }
 }
 
+/** Sends a simple test email to verify Resend is configured. */
+export async function sendTestEmail(to: string, fromName?: string): Promise<void> {
+  const resend = getResendClient();
+  const name = fromName ?? 'GymSync';
+  const { error } = await resend.emails.send({
+    from: `${name} <${FROM_EMAIL}>`,
+    to,
+    subject: 'GymSync — Test email',
+    html: `
+      <p>This is a test email from GymSync.</p>
+      <p>If you received this, your email configuration is working.</p>
+      <p><small>Sent at ${new Date().toISOString()}</small></p>
+    `,
+  });
+  if (error) {
+    throw new Error(`Test email failed: ${error.message}`);
+  }
+}
+
 export async function sendInternalAlertEmail(
   errorMessage: string,
   context: Record<string, unknown>,

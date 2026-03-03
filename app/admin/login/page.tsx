@@ -101,6 +101,9 @@ export default function AdminLoginPage() {
         <p className="text-center text-xs text-gray-400 mt-6">
           Powered by GymSync
         </p>
+        <p className="text-center text-xs text-gray-400 mt-2">
+          Demo: slug <code className="bg-gray-100 px-1 rounded">demo-gym</code>, password <code className="bg-gray-100 px-1 rounded">gymsync2024</code> (after seeding Convex, or set DEMO_MODE=true)
+        </p>
       </div>
     </main>
   );

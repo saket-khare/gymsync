@@ -1,0 +1,181 @@
+'use client';
+
+import { Fragment } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  CaretDownIcon as ChevronDown,
+  CaretUpIcon as ChevronUp,
+  ActivityIcon as Activity,
+  WarningIcon as AlertTriangle,
+  CheckCircleIcon as CheckCircle,
+  ClockIcon as Clock,
+  BarbellIcon as Dumbbell,
+} from '@phosphor-icons/react';
+import { formatDateTime, goalLabel } from '@/lib/utils';
+import type { GymConfig, SheetRow } from '@/types';
+import { STATUS_STYLES, UPSELL_BADGE_STYLES } from './constants';
+import { MemberRowExpanded } from './MemberRowExpanded';
+
+interface MembersTableProps {
+  members: SheetRow[];
+  gymConfig: GymConfig;
+  expandedRow: string | null;
+  onExpandToggle: (rowId: string) => void;
+}
+
+export function MembersTable({
+  members,
+  gymConfig,
+  expandedRow,
+  onExpandToggle,
+}: MembersTableProps) {
+  if (members.length === 0) {
+    return (
+      <div className="bg-[#131316] border border-zinc-800/60 rounded-xl shadow-sm overflow-hidden">
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center mb-4 border border-zinc-800">
+            <Dumbbell className="w-6 h-6 text-zinc-500" />
+          </div>
+          <h3 className="text-sm font-medium text-zinc-200">No members found</h3>
+          <p className="text-zinc-500 text-sm mt-1 max-w-sm">
+            Share your gym's URL to start collecting member profiles and generating plans.
+          </p>
+          <div className="mt-6 px-4 py-2 bg-[#0E0E11] border border-zinc-800/80 rounded-md inline-block">
+            <code className="text-xs text-zinc-400 font-mono">
+              {typeof window !== 'undefined' ? window.location.origin : 'https://gymsync.app'}/
+              {gymConfig.slug}
+            </code>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#131316] border border-zinc-800/60 rounded-xl shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-zinc-800/60 text-xs text-zinc-500 uppercase tracking-wider bg-[#18181b]/50">
+              <th className="px-6 py-3 font-medium">Member</th>
+              <th className="px-6 py-3 font-medium">Primary Goal</th>
+              <th className="px-6 py-3 font-medium">PT Signal</th>
+              <th className="px-6 py-3 font-medium">Status</th>
+              <th className="px-6 py-3 font-medium">Submitted</th>
+              <th className="px-6 py-3 font-medium text-right" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-800/40">
+            <AnimatePresence>
+              {members.map((member) => {
+                const isExpanded = expandedRow === member.rowId;
+                return (
+                  <Fragment key={member.rowId}>
+                    <motion.tr
+                      layout="position"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, filter: 'blur(4px)' }}
+                      transition={{ duration: 0.2 }}
+                      className={`group cursor-pointer transition-colors ${
+                        isExpanded ? 'bg-[#18181b]' : 'hover:bg-[#18181b]/60'
+                      }`}
+                      onClick={() => onExpandToggle(member.rowId)}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-zinc-800/80 flex items-center justify-center text-xs font-medium text-zinc-300 border border-zinc-700/50">
+                            {member.firstName.charAt(0)}
+                            {member.lastName.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm text-zinc-200 group-hover:text-white transition-colors">
+                              {member.firstName} {member.lastName}
+                            </div>
+                            <div className="text-xs text-zinc-500 mt-0.5">{member.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-zinc-400">
+                          {goalLabel(member.primaryGoal)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            UPSELL_BADGE_STYLES[member.interestedInPT] ?? UPSELL_BADGE_STYLES.no
+                          }`}
+                        >
+                          PT: {member.interestedInPT}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium capitalize ${
+                            STATUS_STYLES[member.processingStatus] ?? ''
+                          }`}
+                        >
+                          {member.processingStatus === 'processing' && (
+                            <Activity className="w-3 h-3 animate-pulse" />
+                          )}
+                          {member.processingStatus === 'processed' && (
+                            <CheckCircle className="w-3 h-3" />
+                          )}
+                          {member.processingStatus === 'pending' && (
+                            <Clock className="w-3 h-3" />
+                          )}
+                          {member.processingStatus === 'failed' && (
+                            <AlertTriangle className="w-3 h-3" />
+                          )}
+                          {member.processingStatus}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-zinc-500 tabular-nums">
+                        {member.submittedAt ? formatDateTime(member.submittedAt) : '—'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 rounded-md hover:bg-zinc-800">
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </button>
+                      </td>
+                    </motion.tr>
+
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.tr
+                          key={`${member.rowId}-expanded`}
+                          layout="position"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <td colSpan={6} className="p-0 border-b-0">
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                              className="overflow-hidden bg-[#0E0E11]/50 border-y border-zinc-800/40 shadow-inner"
+                            >
+                              <MemberRowExpanded member={member} />
+                            </motion.div>
+                          </td>
+                        </motion.tr>
+                      )}
+                    </AnimatePresence>
+                  </Fragment>
+                );
+              })}
+            </AnimatePresence>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

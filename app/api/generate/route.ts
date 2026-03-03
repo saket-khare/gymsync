@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGymConfig } from '@/lib/gym-config';
-import { getConvexClient } from '@/lib/convex';
-import { api } from '@/convex/_generated/api';
+import {
+  getMemberByRowId,
+  updateMember,
+  storeMealPlan,
+  storeTrainerBrief,
+} from '@/lib/db';
 import { generateMealPlan, generateTrainerBrief } from '@/lib/ai-generation';
 import { generateMealPlanPDF, generateTrainerBriefPDF } from '@/lib/pdf-generator';
 import { sendWelcomeEmail, sendTrainerBriefEmail, sendInternalAlertEmail } from '@/lib/email-sender';
@@ -33,13 +37,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       throw new Error(`Gym config not found for slug: ${gymSlug}`);
     }
 
-    const convex = getConvexClient();
-
     // Update status to processing
-    await convex.mutation(api.members.update, {
-      rowId,
-      processingStatus: 'processing',
-    });
+    await updateMember(rowId, { processingStatus: 'processing' });
 
     // Generate meal plan and trainer brief in parallel
     const [mealPlan, trainerBrief] = await Promise.all([
@@ -47,11 +46,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       generateTrainerBrief(memberData, gymConfig),
     ]);
 
-    // Store meal plan and trainer brief in Convex
-    const member = await convex.query(api.members.getByRowId, { rowId });
+    // Store meal plan and trainer brief in DB
+    const member = await getMemberByRowId(rowId);
     if (member) {
       await Promise.all([
-        convex.mutation(api.mealPlans.store, {
+        storeMealPlan({
           memberId: member._id,
           gymId: member.gymId,
           memberName: `${memberData.firstName} ${memberData.lastName}`,
@@ -63,7 +62,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           supplementSuggestions: mealPlan.supplementSuggestions,
           generatedAt: mealPlan.generatedAt,
         }),
-        convex.mutation(api.trainerBriefs.store, {
+        storeTrainerBrief({
           memberId: member._id,
           gymId: member.gymId,
           memberSnapshot: trainerBrief.memberSnapshot,
@@ -105,8 +104,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ]);
 
     // Update member: processed
-    await convex.mutation(api.members.update, {
-      rowId,
+    await updateMember(rowId, {
       processingStatus: 'processed',
       mealPlanGenerated: true,
       emailSent: true,
@@ -120,11 +118,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Try to update status to failed
     try {
       if (rowId) {
-        const convex = getConvexClient();
-        await convex.mutation(api.members.update, {
-          rowId,
-          processingStatus: 'failed',
-        });
+        await updateMember(rowId, { processingStatus: 'failed' });
       }
     } catch {
       // Best effort

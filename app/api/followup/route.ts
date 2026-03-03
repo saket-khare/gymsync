@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGymConfig } from '@/lib/gym-config';
-import { getConvexClient } from '@/lib/convex';
-import { api } from '@/convex/_generated/api';
+import { getMemberByRowId, updateMember } from '@/lib/db';
 import { sendFollowUpEmail } from '@/lib/email-sender';
 
 interface FollowUpBody {
@@ -32,9 +31,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ success: false, error: 'Gym not found' }, { status: 404 });
     }
 
-    // Get member from Convex
-    const convex = getConvexClient();
-    const member = await convex.query(api.members.getByRowId, { rowId });
+    // Get member from DB
+    const member = await getMemberByRowId(rowId);
     if (!member) {
       return NextResponse.json({ success: false, error: 'Member not found' }, { status: 404 });
     }
@@ -56,10 +54,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     // Mark as sent
-    await convex.mutation(api.members.update, {
-      rowId,
-      [alreadySentKey]: true,
-    } as { rowId: string; day3Sent?: boolean; day7Sent?: boolean; day30Sent?: boolean });
+    await updateMember(rowId, { [alreadySentKey]: true } as {
+      day3Sent?: boolean;
+      day7Sent?: boolean;
+      day30Sent?: boolean;
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
