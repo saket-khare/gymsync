@@ -19,8 +19,8 @@ const CONFIG_ITEMS: Array<{ label: string; key: keyof GymConfig }> = [
 
 export function GymConfigCard({ gymConfig }: GymConfigCardProps) {
   return (
-    <div className="mt-8 bg-[#131316] border border-zinc-800/60 rounded-xl p-6 shadow-sm relative overflow-hidden">
-      <div className="flex items-center justify-between mb-5">
+    <div className="mt-6 sm:mt-8 bg-[#131316] border border-zinc-800/60 rounded-xl p-4 sm:p-6 shadow-sm relative overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-5">
         <h2 className="font-semibold text-zinc-100 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#5E6AD2]" />
           Gym Configuration
@@ -33,7 +33,7 @@ export function GymConfigCard({ gymConfig }: GymConfigCardProps) {
         </Badge>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-6 gap-x-4 text-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-4 sm:gap-y-6 gap-x-4 text-sm">
         {CONFIG_ITEMS.map(({ label, key }) => {
           const value =
             key === 'isActive'
@@ -63,7 +63,7 @@ export function GymConfigCard({ gymConfig }: GymConfigCardProps) {
         })}
       </div>
 
-      <div className="mt-6 pt-5 border-t border-zinc-800/40">
+      <div className="mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-zinc-800/40">
         <p className="text-xs text-zinc-500 flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5" />
           To update settings, contact your GymSync administrator or edit directly in the database.

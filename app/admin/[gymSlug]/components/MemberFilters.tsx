@@ -18,14 +18,14 @@ export function MemberFilters({
   memberCount,
 }: MemberFiltersProps) {
   return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-3">
-        <div className="flex bg-[#131316] border border-zinc-800/80 rounded-md p-1 relative">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex bg-[#131316] border border-zinc-800/80 rounded-md p-1 relative w-fit">
           {(['all', 'pending', 'processed', 'failed'] as const).map((f) => (
             <button
               key={f}
               onClick={() => onFilterChange(f)}
-              className={`relative px-3 py-1.5 rounded-sm text-xs font-medium capitalize transition-all ${
+              className={`relative px-3 py-2 sm:py-1.5 rounded-sm text-xs font-medium capitalize transition-all touch-manipulation ${
                 filter === f ? 'text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
@@ -42,14 +42,14 @@ export function MemberFilters({
           ))}
         </div>
 
-        <div className="w-px h-4 bg-zinc-800/80" />
+        <div className="w-full sm:w-px sm:h-4 bg-zinc-800/80" />
 
-        <div className="flex bg-[#131316] border border-zinc-800/80 rounded-md p-1 relative">
+        <div className="flex bg-[#131316] border border-zinc-800/80 rounded-md p-1 relative w-fit">
           {(['all', 'yes', 'maybe'] as const).map((f) => (
             <button
               key={f}
               onClick={() => onPtFilterChange(f)}
-              className={`relative px-3 py-1.5 rounded-sm text-xs font-medium capitalize transition-all ${
+              className={`relative px-3 py-2 sm:py-1.5 rounded-sm text-xs font-medium capitalize transition-all touch-manipulation ${
                 ptFilter === f ? 'text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >

@@ -13,8 +13,8 @@ interface MemberRowExpandedProps {
 
 export function MemberRowExpanded({ member }: MemberRowExpandedProps) {
   return (
-    <div className="px-6 py-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-8 text-sm">
+    <div className="px-4 py-4 sm:px-6 sm:py-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 sm:gap-x-8 gap-y-6 sm:gap-y-8 text-sm">
         <div className="space-y-3">
           <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Demographics</p>
           <div>
@@ -85,7 +85,7 @@ export function MemberRowExpanded({ member }: MemberRowExpandedProps) {
           </div>
         </div>
 
-        <div className="col-span-1 md:col-span-3">
+        <div className="col-span-1 sm:col-span-2 md:col-span-3">
           <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
             Email Sequence Status
           </p>
@@ -107,11 +107,11 @@ export function MemberRowExpanded({ member }: MemberRowExpandedProps) {
         </div>
 
         {(member.injuries || member.medicalConditions || member.foodAllergies) && (
-          <div className="col-span-2 md:col-span-4 mt-2 pt-6 border-t border-zinc-800/40">
+          <div className="col-span-1 sm:col-span-2 md:col-span-4 mt-2 pt-4 sm:pt-6 border-t border-zinc-800/40">
             <p className="text-xs font-medium text-rose-500/90 uppercase tracking-wider mb-4 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" /> Medical Considerations
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
               {member.injuries && (
                 <div className="bg-rose-500/5 border border-rose-500/10 rounded-lg p-3">
                   <span className="text-[11px] font-medium text-rose-400/80 uppercase tracking-wider block mb-1">

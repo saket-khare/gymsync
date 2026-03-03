@@ -46,7 +46,7 @@ export default function AdminDashboard({ gymConfig, members, stats }: AdminDashb
     <div className="min-h-screen bg-[#0E0E11] text-zinc-100 font-sans selection:bg-indigo-500/30">
       <AdminNav gymConfig={gymConfig} isRefreshing={isRefreshing} onRefresh={refresh} />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
         <StatsCards stats={stats} />
 
         <MemberFilters

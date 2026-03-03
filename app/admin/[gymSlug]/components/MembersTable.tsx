@@ -40,8 +40,8 @@ export function MembersTable({
           <p className="text-zinc-500 text-sm mt-1 max-w-sm">
             Share your gym's URL to start collecting member profiles and generating plans.
           </p>
-          <div className="mt-6 px-4 py-2 bg-[#0E0E11] border border-zinc-800/80 rounded-md inline-block">
-            <code className="text-xs text-zinc-400 font-mono">
+          <div className="mt-6 px-3 sm:px-4 py-2 bg-[#0E0E11] border border-zinc-800/80 rounded-md inline-block max-w-full overflow-x-auto">
+            <code className="text-[11px] sm:text-xs text-zinc-400 font-mono break-all">
               {typeof window !== 'undefined' ? window.location.origin : 'https://gymsync.app'}/
               {gymConfig.slug}
             </code>
@@ -53,7 +53,103 @@ export function MembersTable({
 
   return (
     <div className="bg-[#131316] border border-zinc-800/60 rounded-xl shadow-sm overflow-hidden">
-      <div className="overflow-x-auto">
+      {/* Mobile: card layout */}
+      <div className="md:hidden divide-y divide-zinc-800/40">
+        <AnimatePresence>
+          {members.map((member) => {
+            const isExpanded = expandedRow === member.rowId;
+            return (
+              <div key={member.rowId}>
+                <motion.div
+                  layout="position"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.2 }}
+                  className={`p-4 cursor-pointer transition-colors touch-manipulation ${
+                    isExpanded ? 'bg-[#18181b]' : 'active:bg-[#18181b]/60'
+                  }`}
+                  onClick={() => onExpandToggle(member.rowId)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-zinc-800/80 flex items-center justify-center text-sm font-medium text-zinc-300 border border-zinc-700/50 shrink-0">
+                        {member.firstName.charAt(0)}
+                        {member.lastName.charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm text-zinc-200 truncate">
+                          {member.firstName} {member.lastName}
+                        </div>
+                        <div className="text-xs text-zinc-500 truncate">{member.email}</div>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <span className="text-xs text-zinc-400">
+                            {goalLabel(member.primaryGoal)}
+                          </span>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
+                              UPSELL_BADGE_STYLES[member.interestedInPT] ?? UPSELL_BADGE_STYLES.no
+                            }`}
+                          >
+                            PT: {member.interestedInPT}
+                          </span>
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium capitalize ${
+                              STATUS_STYLES[member.processingStatus] ?? ''
+                            }`}
+                          >
+                            {member.processingStatus === 'processing' && (
+                              <Activity className="w-3 h-3 animate-pulse shrink-0" />
+                            )}
+                            {member.processingStatus === 'processed' && (
+                              <CheckCircle className="w-3 h-3 shrink-0" />
+                            )}
+                            {member.processingStatus === 'pending' && (
+                              <Clock className="w-3 h-3 shrink-0" />
+                            )}
+                            {member.processingStatus === 'failed' && (
+                              <AlertTriangle className="w-3 h-3 shrink-0" />
+                            )}
+                            {member.processingStatus}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-[11px] text-zinc-500 tabular-nums">
+                        {member.submittedAt ? formatDateTime(member.submittedAt) : '—'}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-zinc-500" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-zinc-500" />
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      key={`${member.rowId}-expanded`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden bg-[#0E0E11]/50 border-y border-zinc-800/40"
+                    >
+                      <MemberRowExpanded member={member} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+
+      {/* Desktop: table layout */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-zinc-800/60 text-xs text-zinc-500 uppercase tracking-wider bg-[#18181b]/50">
