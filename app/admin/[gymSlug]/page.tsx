@@ -1,7 +1,12 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getGymConfig } from '@/lib/gym-config';
-import { listMembersByGym, listMealPlansByGym } from '@/lib/db';
+import {
+  listMembersByGym,
+  listMealPlansByGym,
+  getDashboardIntelligence,
+  getHighSignalMembers,
+} from '@/lib/db';
 import AdminDashboard from './AdminDashboard';
 import type { SheetRow } from '@/types';
 
@@ -74,6 +79,9 @@ export default async function AdminGymPage({ params }: Props) {
       day3Sent: m.day3Sent,
       day7Sent: m.day7Sent,
       day30Sent: m.day30Sent,
+      memberStatus: m.memberStatus ?? 'converted',
+      leadSource: m.leadSource ?? undefined,
+      convertedAt: m.convertedAt ? new Date(m.convertedAt).toISOString() : undefined,
     }));
   } catch {
     // DB not configured or empty — show empty state
@@ -104,12 +112,25 @@ export default async function AdminGymPage({ params }: Props) {
     mealPlansGenerated: members.filter((m) => m.mealPlanGenerated).length,
   };
 
+  let dashboardIntelligence: Awaited<ReturnType<typeof getDashboardIntelligence>> | null = null;
+  let highSignalMembers: Awaited<ReturnType<typeof getHighSignalMembers>> = [];
+  try {
+    [dashboardIntelligence, highSignalMembers] = await Promise.all([
+      getDashboardIntelligence(gymConfig.id),
+      getHighSignalMembers(gymConfig.id, 10),
+    ]);
+  } catch {
+    // ignore
+  }
+
   return (
     <AdminDashboard
       gymConfig={gymConfig}
       members={members}
       stats={stats}
       mealPlanByRowId={mealPlanByRowId}
+      dashboardIntelligence={dashboardIntelligence}
+      highSignalMembers={highSignalMembers}
     />
   );
 }

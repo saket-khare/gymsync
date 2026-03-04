@@ -11,8 +11,9 @@ import {
   CheckCircleIcon as CheckCircle,
   ClockIcon as Clock,
   BarbellIcon as Dumbbell,
+  UserPlusIcon as UserPlus,
 } from '@phosphor-icons/react';
-import { formatDateTime, goalLabel, dietLabel } from '@/lib/utils';
+import { formatDateTime, goalLabel, dietLabel, calculateBmi } from '@/lib/utils';
 import type { GymConfig, SheetRow } from '@/types';
 import { STATUS_STYLES } from './constants';
 import { MemberRowExpanded } from './MemberRowExpanded';
@@ -28,6 +29,9 @@ interface MembersTableProps {
   sortKey: SortKey;
   sortDir: SortDir;
   onSort: (key: SortKey) => void;
+  showConvertButton?: boolean;
+  onConvertToMember?: (member: SheetRow) => void;
+  convertingId?: string | null;
 }
 
 function SortHeader({
@@ -72,6 +76,9 @@ export function MembersTable({
   sortKey,
   sortDir,
   onSort,
+  showConvertButton = false,
+  onConvertToMember,
+  convertingId = null,
 }: MembersTableProps) {
   if (members.length === 0) {
     return (
@@ -137,6 +144,14 @@ export function MembersTable({
                           <span className="text-xs text-gray-500 dark:text-zinc-500">
                             {dietLabel(member.dietType)}
                           </span>
+                          {member.weightKg && member.heightCm && (() => {
+                            const bmi = calculateBmi(member.weightKg, member.heightCm);
+                            return (
+                              <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${bmi.color}`}>
+                                BMI {bmi.value}
+                              </span>
+                            );
+                          })()}
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium capitalize ${
                               STATUS_STYLES[member.processingStatus] ?? ''
@@ -160,6 +175,26 @@ export function MembersTable({
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
+                      {showConvertButton && onConvertToMember && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onConvertToMember(member);
+                          }}
+                          disabled={!!convertingId}
+                          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                          {convertingId === member.id ? (
+                            'Converting…'
+                          ) : (
+                            <>
+                              <UserPlus className="w-3.5 h-3.5" />
+                              Convert
+                            </>
+                          )}
+                        </button>
+                      )}
                       <span className="text-[11px] text-gray-500 dark:text-zinc-500 tabular-nums">
                         {member.submittedAt ? formatDateTime(member.submittedAt) : '—'}
                       </span>
@@ -182,7 +217,7 @@ export function MembersTable({
                       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden bg-gray-50 dark:bg-[#0E0E11]/50 border-y border-gray-200 dark:border-zinc-800/40"
                     >
-                      <MemberRowExpanded member={member} />
+                      <MemberRowExpanded member={member} gymSlug={gymConfig.slug} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -224,6 +259,7 @@ export function MembersTable({
                   onSort={onSort}
                 />
               </th>
+              <th className="px-6 py-3 font-medium">BMI</th>
               <th className="px-6 py-3 font-medium">Status</th>
               <th className="px-6 py-3">
                 <SortHeader
@@ -234,7 +270,7 @@ export function MembersTable({
                   onSort={onSort}
                 />
               </th>
-              <th className="px-6 py-3 font-medium text-right w-12" />
+              <th className="px-6 py-3 font-medium text-right w-28" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-zinc-800/40">
@@ -283,6 +319,18 @@ export function MembersTable({
                         </span>
                       </td>
                       <td className="px-6 py-4">
+                        {member.weightKg && member.heightCm ? (() => {
+                          const bmi = calculateBmi(member.weightKg, member.heightCm);
+                          return (
+                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${bmi.color}`} title={`BMI ${bmi.value}`}>
+                              {bmi.value} · {bmi.category}
+                            </span>
+                          );
+                        })() : (
+                          <span className="text-xs text-gray-400 dark:text-zinc-600">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium capitalize ${
                             STATUS_STYLES[member.processingStatus] ?? ''
@@ -307,20 +355,42 @@ export function MembersTable({
                         {member.submittedAt ? formatDateTime(member.submittedAt) : '—'}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          type="button"
-                          className="text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors p-1 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-800"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onExpandToggle(member.rowId);
-                          }}
-                        >
-                          {isExpanded ? (
-                            <ChevronUp className="w-4 h-4" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4" />
+                        <div className="flex items-center justify-end gap-2">
+                          {showConvertButton && onConvertToMember && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onConvertToMember(member);
+                              }}
+                              disabled={!!convertingId}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                            >
+                              {convertingId === member.id ? (
+                                'Converting…'
+                              ) : (
+                                <>
+                                  <UserPlus className="w-3.5 h-3.5" />
+                                  Convert
+                                </>
+                              )}
+                            </button>
                           )}
-                        </button>
+                          <button
+                            type="button"
+                            className="text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors p-1 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-800"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onExpandToggle(member.rowId);
+                            }}
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
                       </td>
                     </motion.tr>
 
@@ -334,7 +404,7 @@ export function MembersTable({
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <td colSpan={6} className="p-0 border-b-0">
+                          <td colSpan={showConvertButton ? 8 : 7} className="p-0 border-b-0">
                             <motion.div
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: 'auto', opacity: 1 }}
@@ -342,7 +412,7 @@ export function MembersTable({
                               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                               className="overflow-hidden bg-gray-50 dark:bg-[#0E0E11]/50 border-y border-gray-200 dark:border-zinc-800/40 shadow-inner"
                             >
-                              <MemberRowExpanded member={member} />
+                              <MemberRowExpanded member={member} gymSlug={gymConfig.slug} />
                             </motion.div>
                           </td>
                         </motion.tr>

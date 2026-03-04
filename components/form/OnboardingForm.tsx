@@ -52,6 +52,11 @@ export default function OnboardingForm({ gymConfig }: OnboardingFormProps) {
       stressLevel: 3,
       selfRatedFitness: 3,
       _selectedDays: [] as string[],
+      // Step 5 — allow "Next" even if user doesn't change every field
+      daysPerWeekAvailable: 3,
+      sessionDurationMinutes: 60,
+      interestedInPT: 'maybe' as const,
+      budgetForSupplements: 'none' as const,
     },
   });
 

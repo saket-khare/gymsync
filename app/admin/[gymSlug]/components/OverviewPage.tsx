@@ -1,14 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import {
   UsersIcon as Users,
   CalendarBlankIcon as CalendarDays,
   EnvelopeIcon as Mail,
   ClipboardTextIcon as Clipboard,
   HourglassIcon as Hourglass,
+  LightningIcon as Lightning,
+  TrendUpIcon as TrendUp,
+  CreditCardIcon as CreditCard,
+  LinkIcon as LinkIcon,
+  PaperPlaneTiltIcon as PaperPlaneTilt,
 } from '@phosphor-icons/react';
 import { goalLabel, experienceLabel, formatDateTime } from '@/lib/utils';
 import type { SheetRow } from '@/types';
+import type { DashboardIntelligence } from '@/lib/db';
 
 export interface OverviewStats {
   total: number;
@@ -18,9 +25,21 @@ export interface OverviewStats {
   mealPlansGenerated: number;
 }
 
+interface HighSignalMember {
+  memberId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  primaryGoal: string;
+  upsellSignal: string;
+  upsellReasoning: string;
+}
+
 interface OverviewPageProps {
   stats: OverviewStats;
   members: SheetRow[];
+  dashboardIntelligence?: DashboardIntelligence | null;
+  highSignalMembers?: HighSignalMember[];
 }
 
 const STAT_ITEMS: { label: string; key: keyof OverviewStats; icon: typeof Users }[] = [
@@ -62,7 +81,13 @@ const BAR_COLORS = [
   'bg-cyan-500 dark:bg-cyan-400',
 ];
 
-export function OverviewPage({ stats, members }: OverviewPageProps) {
+export function OverviewPage({
+  stats,
+  members,
+  dashboardIntelligence = null,
+  highSignalMembers = [],
+}: OverviewPageProps) {
+  const [sendingPtOfferId, setSendingPtOfferId] = useState<string | null>(null);
   const goalCounts = getGoalCounts(members);
   const experienceCounts = getExperienceCounts(members);
   const maxGoal = Math.max(1, ...goalCounts.map((g) => g.count));
@@ -70,6 +95,23 @@ export function OverviewPage({ stats, members }: OverviewPageProps) {
   const recentSignups = [...members]
     .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
     .slice(0, 5);
+
+  async function handleSendPtOffer(memberId: string) {
+    setSendingPtOfferId(memberId);
+    try {
+      const res = await fetch('/api/admin/send-pt-offer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId }),
+      });
+      const data = await res.json();
+      if (!data.success) alert(data.error ?? 'Failed to send');
+    } finally {
+      setSendingPtOfferId(null);
+    }
+  }
+
+  const intel = dashboardIntelligence;
 
   return (
     <div className="space-y-8">
@@ -101,6 +143,111 @@ export function OverviewPage({ stats, members }: OverviewPageProps) {
           </div>
         ))}
       </div>
+
+      {/* Revenue intelligence widgets */}
+      {intel && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="bg-white dark:bg-[#131316] border border-amber-200 dark:border-amber-800/50 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <Lightning className="w-4 h-4 text-amber-500" />
+              <span className="text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
+                Hot Leads (48h)
+              </span>
+            </div>
+            <span className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
+              {intel.hotLeads}
+            </span>
+          </div>
+          <div className="bg-white dark:bg-[#131316] border border-gray-200 dark:border-zinc-800/60 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendUp className="w-4 h-4 text-indigo-500" />
+              <span className="text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
+                Conversion Rate
+              </span>
+            </div>
+            <span className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
+              {intel.conversionRate}%
+            </span>
+          </div>
+          <div className="bg-white dark:bg-[#131316] border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <CreditCard className="w-4 h-4 text-emerald-500" />
+              <span className="text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
+                PT Pipeline
+              </span>
+            </div>
+            <span className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
+              {intel.ptPipelineCount}
+            </span>
+          </div>
+          <div className="bg-white dark:bg-[#131316] border border-gray-200 dark:border-zinc-800/60 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <CalendarDays className="w-4 h-4 text-rose-500" />
+              <span className="text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
+                Expiring in 30d
+              </span>
+            </div>
+            <span className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
+              {intel.expiringIn30Days}
+            </span>
+          </div>
+          <div className="bg-white dark:bg-[#131316] border border-gray-200 dark:border-zinc-800/60 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <LinkIcon className="w-4 h-4 text-violet-500" />
+              <span className="text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
+                Affiliate Clicks (mo)
+              </span>
+            </div>
+            <span className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
+              {intel.affiliateClicksThisMonth}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* PT Upsell Pipeline */}
+      {highSignalMembers.length > 0 && (
+        <div className="bg-white dark:bg-[#131316] border border-gray-200 dark:border-zinc-800/60 rounded-xl p-4 sm:p-6 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">
+            PT Upsell Pipeline — HIGH signal
+          </h3>
+          <ul className="divide-y divide-gray-100 dark:divide-zinc-800/60">
+            {highSignalMembers.map((m) => (
+              <li
+                key={m.memberId}
+                className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+              >
+                <div>
+                  <span className="font-medium text-sm text-gray-900 dark:text-zinc-200">
+                    {m.firstName} {m.lastName}
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-zinc-500 ml-2">
+                    {goalLabel(m.primaryGoal)}
+                  </span>
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1 line-clamp-1">
+                    {m.upsellReasoning}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={!!sendingPtOfferId}
+                  onClick={() => handleSendPtOffer(m.memberId)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {sendingPtOfferId === m.memberId ? (
+                    'Sending…'
+                  ) : (
+                    <>
+                      <PaperPlaneTilt className="w-3.5 h-3.5" />
+                      Send PT Offer
+                    </>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         {/* Goal distribution */}

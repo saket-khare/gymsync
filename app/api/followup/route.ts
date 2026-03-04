@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGymConfig } from '@/lib/gym-config';
-import { getMemberByRowId, updateMember } from '@/lib/db';
+import { getMemberByRowId, updateMember, listActiveAffiliateProducts } from '@/lib/db';
 import { sendFollowUpEmail } from '@/lib/email-sender';
 
 interface FollowUpBody {
@@ -45,12 +45,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const memberName = `${member.firstName} ${member.lastName}`;
 
+    let affiliateProducts: { name: string; affiliateUrl: string; description?: string }[] | undefined;
+    if (day === 30 && gymConfig.id) {
+      const products = await listActiveAffiliateProducts(gymConfig.id);
+      const goal = member.primaryGoal ?? '';
+      const matched = products.filter(
+        (p) => !p.goalTags || p.goalTags.length === 0 || (goal && p.goalTags?.includes(goal))
+      );
+      affiliateProducts = matched.slice(0, 2).map((p) => ({
+        name: p.name,
+        affiliateUrl: p.affiliateUrl,
+        description: p.description ?? undefined,
+      }));
+    }
+
     await sendFollowUpEmail({
       memberEmail: member.email,
       memberName,
       gymConfig,
       day,
       primaryGoal: member.primaryGoal,
+      affiliateProducts,
     });
 
     // Mark as sent

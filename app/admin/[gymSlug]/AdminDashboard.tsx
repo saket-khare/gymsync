@@ -2,16 +2,28 @@
 
 import { useState } from 'react';
 import type { GymConfig, SheetRow } from '@/types';
+import type { DashboardIntelligence } from '@/lib/db';
 import type { AdminPage } from './components/AdminSidebar';
 import { AdminSidebar } from './components/AdminSidebar';
 import { OverviewPage, type OverviewStats } from './components/OverviewPage';
 import { MembersPage } from './components/MembersPage';
 import { MealPlansPage } from './components/MealPlansPage';
 import { SubscriptionsPage } from './components/SubscriptionsPage';
+import { AffiliateProductsPage } from './components/AffiliateProductsPage';
 import { SettingsPage } from './components/SettingsPage';
 
 export interface MealPlanByRowId {
   [rowId: string]: { generatedAt: string };
+}
+
+interface HighSignalMember {
+  memberId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  primaryGoal: string;
+  upsellSignal: string;
+  upsellReasoning: string;
 }
 
 interface AdminDashboardProps {
@@ -19,6 +31,8 @@ interface AdminDashboardProps {
   members: SheetRow[];
   stats: OverviewStats;
   mealPlanByRowId?: MealPlanByRowId;
+  dashboardIntelligence?: DashboardIntelligence | null;
+  highSignalMembers?: HighSignalMember[];
 }
 
 export default function AdminDashboard({
@@ -26,6 +40,8 @@ export default function AdminDashboard({
   members,
   stats,
   mealPlanByRowId = {},
+  dashboardIntelligence = null,
+  highSignalMembers = [],
 }: AdminDashboardProps) {
   const [activePage, setActivePage] = useState<AdminPage>('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -46,9 +62,14 @@ export default function AdminDashboard({
       />
 
       <main className="pt-14 md:pt-6 md:pl-[240px] min-h-screen">
-        <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
+        <div className="max-w-8xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
           {activePage === 'overview' && (
-            <OverviewPage stats={stats} members={members} />
+            <OverviewPage
+              stats={stats}
+              members={members}
+              dashboardIntelligence={dashboardIntelligence}
+              highSignalMembers={highSignalMembers}
+            />
           )}
           {activePage === 'members' && (
             <MembersPage members={members} gymConfig={gymConfig} />
@@ -62,6 +83,9 @@ export default function AdminDashboard({
           )}
           {activePage === 'subscriptions' && (
             <SubscriptionsPage members={members} gymConfig={gymConfig} />
+          )}
+          {activePage === 'affiliates' && (
+            <AffiliateProductsPage gymSlug={gymConfig.slug} />
           )}
           {activePage === 'settings' && (
             <SettingsPage gymConfig={gymConfig} />

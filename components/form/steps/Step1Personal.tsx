@@ -4,7 +4,7 @@ import { useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { GENDERS, STEP_META } from '@/lib/onboarding-steps';
+import { GENDERS, STEP_META, LEAD_SOURCE_OPTIONS } from '@/lib/onboarding-steps';
 
 interface Step1PersonalProps {
   primaryColor?: string;
@@ -19,6 +19,7 @@ export default function Step1Personal({ primaryColor = '#1A56DB' }: Step1Persona
   } = useFormContext();
 
   const selectedGender = watch('gender');
+  const selectedLeadSource = watch('leadSource');
 
   return (
     <div className="space-y-5">
@@ -153,6 +154,34 @@ export default function Step1Personal({ primaryColor = '#1A56DB' }: Step1Persona
         {errors.gender && (
           <p className="text-xs text-red-500">{String(errors.gender.message)}</p>
         )}
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-gray-700">
+          How did you hear about us?
+        </Label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {LEAD_SOURCE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setValue('leadSource', opt.value, { shouldValidate: true })}
+              className={cn(
+                'p-3 rounded-xl border-2 text-sm font-medium transition-all duration-200 text-left',
+                selectedLeadSource === opt.value
+                  ? 'border-current text-white'
+                  : 'border-gray-200 text-gray-600 hover:border-gray-300',
+              )}
+              style={
+                selectedLeadSource === opt.value
+                  ? { borderColor: primaryColor, backgroundColor: primaryColor }
+                  : {}
+              }
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

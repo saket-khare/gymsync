@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { WarningIcon as AlertTriangle } from '@phosphor-icons/react';
 import type { GymConfig } from '@/types';
+import { SubscriptionTypesManager } from './SubscriptionTypesManager';
 
 interface SettingsPageProps {
   gymConfig: GymConfig;
@@ -23,9 +24,11 @@ export function SettingsPage({ gymConfig }: SettingsPageProps) {
       <div>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-1">Settings</h2>
         <p className="text-sm text-gray-500 dark:text-zinc-400">
-          Gym configuration (read-only). Contact your administrator to change.
+          Manage subscription types and view your gym configuration.
         </p>
       </div>
+
+      <SubscriptionTypesManager gymSlug={gymConfig.slug} />
 
       <div className="bg-white dark:bg-[#131316] border border-gray-200 dark:border-zinc-800/60 rounded-xl p-4 sm:p-6 shadow-sm relative overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-5">
@@ -33,12 +36,13 @@ export function SettingsPage({ gymConfig }: SettingsPageProps) {
             <span className="w-2 h-2 rounded-full bg-[#5E6AD2]" />
             Gym Configuration
           </h3>
+
           <Badge
-            variant="outline"
-            className="bg-gray-100 dark:bg-zinc-800/50 text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-zinc-700/50 rounded-sm font-normal"
-          >
-            Read Only
-          </Badge>
+              variant="outline"
+              className="bg-gray-100 dark:bg-zinc-800/50 text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-zinc-700/50 rounded-sm font-normal"
+            >
+              Read Only
+            </Badge>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-4 sm:gap-y-6 gap-x-4 text-sm">

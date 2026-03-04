@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fullMemberSchema } from '@/lib/validations';
+import { fullMemberSchema, ONBOARDING_EXTRAS_KEYS } from '@/lib/validations';
 import { getGymConfig } from '@/lib/gym-config';
-import { createMember } from '@/lib/db';
+import { createMember, getExistingMemberByGymEmailOrPhone } from '@/lib/db';
 import { normalizePhone } from '@/lib/utils';
 import type { GenerateRequestBody } from '@/types';
 
@@ -28,7 +28,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     memberData.city = memberData.city.trim();
     memberData.submittedAt = new Date().toISOString();
 
-    // Fetch gym config
     const gymConfig = await getGymConfig(memberData.gymSlug);
     if (!gymConfig) {
       return NextResponse.json(
@@ -44,11 +43,30 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Generate unique row ID
-    const rowId = crypto.randomUUID();
     const isDemoMode = process.env.DEMO_MODE === 'true' || !process.env.DATABASE_URL;
 
-    // Write to Neon DB (skip in demo mode)
+    if (!isDemoMode) {
+      const existing = await getExistingMemberByGymEmailOrPhone(
+        gymConfig.id,
+        memberData.email,
+        memberData.phone,
+      );
+      if (existing) {
+        return NextResponse.json({
+          success: true,
+          data: { rowId: existing.rowId, existing: true },
+        });
+      }
+    }
+
+    const rowId = crypto.randomUUID();
+
+    const raw = memberData as Record<string, unknown>;
+    const onboardingExtras = ONBOARDING_EXTRAS_KEYS.reduce<Record<string, unknown>>((acc, key) => {
+      if (raw[key] !== undefined && raw[key] !== null && raw[key] !== '') acc[key] = raw[key];
+      return acc;
+    }, {});
+
     if (!isDemoMode) {
       await createMember({
         gymId: gymConfig.id,
@@ -87,6 +105,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         flexibilityTest: memberData.flexibilityTest,
         restingHeartRate: memberData.restingHeartRate,
         submittedAt: memberData.submittedAt,
+        leadSource: memberData.leadSource,
+        ...(Object.keys(onboardingExtras).length > 0 && { onboardingExtras }),
       });
     } else {
       console.log('[submit] Demo mode: skipping DB write.');
@@ -97,7 +117,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const generatePayload: GenerateRequestBody = {
         rowId,
         gymSlug: memberData.gymSlug,
-        memberData,
+        memberData: {
+          ...memberData,
+          ...(Object.keys(onboardingExtras).length > 0 && { onboardingExtras }),
+        },
       };
 
       const baseUrl = process.env.NEXTAUTH_URL ?? `https://${req.headers.get('host')}`;

@@ -6,12 +6,14 @@ import {
   WarningIcon as AlertTriangle,
 } from '@phosphor-icons/react';
 import type { SheetRow } from '@/types';
+import { TrainerBriefView } from './TrainerBriefView';
 
 interface MemberRowExpandedProps {
   member: SheetRow;
+  gymSlug?: string;
 }
 
-export function MemberRowExpanded({ member }: MemberRowExpandedProps) {
+export function MemberRowExpanded({ member, gymSlug }: MemberRowExpandedProps) {
   return (
     <div className="px-4 py-4 sm:px-6 sm:py-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 sm:gap-x-8 gap-y-6 sm:gap-y-8 text-sm">
@@ -157,6 +159,12 @@ export function MemberRowExpanded({ member }: MemberRowExpandedProps) {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {member.id && gymSlug && (
+          <div className="col-span-1 sm:col-span-2 md:col-span-4 mt-4 pt-4 sm:pt-6 border-t border-gray-200 dark:border-zinc-800/40">
+            <TrainerBriefView memberId={member.id} gymSlug={gymSlug} />
           </div>
         )}
       </div>

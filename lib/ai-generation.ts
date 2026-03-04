@@ -45,8 +45,11 @@ export async function generateMealPlan(
 
   const systemPrompt = `You are a sports nutritionist specialising in Indian dietary patterns. Return ONLY valid JSON — no prose, no markdown fences. Use common Indian ingredients. Keep all meals under 30 minutes prep. Diet type "${member.dietType}": strictly follow it.`;
 
-  // Shared member context injected into every chunk prompt
-  const ctx = `Name: ${member.firstName} ${member.lastName} | Goal: ${goalLabel(member.primaryGoal)} | Daily target: ${dailyTarget} kcal | Diet: ${member.dietType} | Allergies: ${member.foodAllergies || 'none'} | Medical: ${member.medicalConditions || 'none'}`;
+  const extrasStr =
+    member.onboardingExtras && Object.keys(member.onboardingExtras).length > 0
+      ? ` | Extras: ${JSON.stringify(member.onboardingExtras)}`
+      : '';
+  const ctx = `Name: ${member.firstName} ${member.lastName} | Goal: ${goalLabel(member.primaryGoal)} | Daily target: ${dailyTarget} kcal | Diet: ${member.dietType} | Allergies: ${member.foodAllergies || 'none'} | Medical: ${member.medicalConditions || 'none'}${extrasStr}`;
 
   const call = (days: string) =>
     retryWithBackoff(() =>

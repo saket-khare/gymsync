@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+export const leadSourceSchema = z.enum([
+  'walk_in',
+  'referral',
+  'instagram',
+  'facebook',
+  'website',
+  'other',
+]);
+
 export const step1Schema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50),
   lastName: z.string().min(1, 'Last name is required').max(50),
@@ -7,10 +16,11 @@ export const step1Schema = z.object({
   phone: z.string().min(7, 'Phone number is too short').max(15),
   age: z.coerce
     .number()
-    .min(13, 'You must be at least 13 years old')
-    .max(100, 'Please enter a valid age'),
+    .min(16, 'You must be at least 16 years old')
+    .max(75, 'Please enter a valid age'),
   gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say']),
   city: z.string().min(1, 'City is required').max(100),
+  leadSource: leadSourceSchema.optional(),
 });
 
 export const step2Schema = z.object({
@@ -70,6 +80,21 @@ export const step6Schema = z.object({
   restingHeartRate: z.coerce.number().min(30).max(200).optional().or(z.literal('')).transform(v => v === '' ? undefined : v),
 });
 
+/** Keys stored in onboarding_extras for meal planner AI (multi-select, body goal, etc.). */
+export const ONBOARDING_EXTRAS_KEYS = [
+  'bodyGoal',
+  'triedFitBefore',
+  'timeSinceTrained',
+  'mealsPerDay',
+  'whatDoYouEat',
+  'cantEat',
+  'whoPreparesMeals',
+  'cookingElaboration',
+  'supplementsOpen',
+  'trainedPtBefore',
+  'homeEquipmentLevel',
+] as const;
+
 export const fullMemberSchema = step1Schema
   .merge(step2Schema)
   .merge(step3Schema)
@@ -79,6 +104,7 @@ export const fullMemberSchema = step1Schema
   .extend({
     gymSlug: z.string().min(1),
     submittedAt: z.string(),
+    onboardingExtras: z.record(z.unknown()).optional(),
   });
 
 export type Step1Data = z.infer<typeof step1Schema>;

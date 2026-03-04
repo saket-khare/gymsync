@@ -32,9 +32,28 @@ const flexibilityEnum = ['touch_toes', 'almost', 'cant_reach'] as const;
 const processingStatusEnum = ['pending', 'processing', 'processed', 'failed'] as const;
 const upsellSignalEnum = ['HIGH', 'MEDIUM', 'LOW'] as const;
 
+export const memberStatusEnum = ['lead', 'converted', 'lapsed'] as const;
+export const leadSourceEnum = ['walk_in', 'referral', 'instagram', 'facebook', 'website', 'other'] as const;
+
 export const subscriptionPlanEnum = ['monthly', 'quarterly', 'half_yearly', 'annual'] as const;
 export const subscriptionStatusEnum = ['active', 'expired', 'cancelled', 'paused'] as const;
 export const paymentMethodEnum = ['cash', 'upi', 'card', 'bank_transfer', 'other'] as const;
+
+export const subscriptionTypes = pgTable(
+  'subscription_types',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    gymId: uuid('gym_id')
+      .notNull()
+      .references(() => gyms.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    color: varchar('color', { length: 32 }).notNull().default('#5E6AD2'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('subscription_types_gym_id_idx').on(t.gymId)]
+);
 
 export const gyms = pgTable(
   'gyms',
@@ -124,11 +143,31 @@ export const members = pgTable(
     day3Sent: boolean('day3_sent').notNull().default(false),
     day7Sent: boolean('day7_sent').notNull().default(false),
     day30Sent: boolean('day30_sent').notNull().default(false),
+    portalOtp: varchar('portal_otp', { length: 8 }),
+    portalOtpExpiresAt: timestamp('portal_otp_expires_at', { withTimezone: true }),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+    memberStatus: varchar('member_status', { length: 32 })
+      .notNull()
+      .default('lead')
+      .$type<(typeof memberStatusEnum)[number]>(),
+    leadSource: varchar('lead_source', { length: 32 }).$type<(typeof leadSourceEnum)[number]>(),
+    convertedAt: timestamp('converted_at', { withTimezone: true }),
+    followUpDay1Sent: boolean('follow_up_day1_sent').notNull().default(false),
+    followUpDay3Sent: boolean('follow_up_day3_sent').notNull().default(false),
+    followUpDay7Sent: boolean('follow_up_day7_sent').notNull().default(false),
+    followUpDay14Sent: boolean('follow_up_day14_sent').notNull().default(false),
+    followUpDay30Sent: boolean('follow_up_day30_sent').notNull().default(false),
+    ptOfferSent: boolean('pt_offer_sent').notNull().default(false),
+    ptOfferSentAt: timestamp('pt_offer_sent_at', { withTimezone: true }),
+    /** Meal planner context: bodyGoal, triedFitBefore, mealsPerDay, whatDoYouEat, cantEat, whoPreparesMeals, cookingElaboration, supplementsOpen, trainedPtBefore, homeEquipmentLevel, etc. */
+    onboardingExtras: jsonb('onboarding_extras'),
   },
   (t) => [
     index('members_row_id_idx').on(t.rowId),
     index('members_gym_id_idx').on(t.gymId),
     index('members_gym_slug_idx').on(t.gymSlug),
+    index('members_member_status_idx').on(t.memberStatus),
+    index('members_lead_source_idx').on(t.leadSource),
   ]
 );
 
@@ -215,6 +254,7 @@ export const subscriptions = pgTable(
     memberId: uuid('member_id')
       .notNull()
       .references(() => members.id, { onDelete: 'cascade' }),
+    typeId: uuid('type_id').references(() => subscriptionTypes.id, { onDelete: 'set null' }),
     planType: varchar('plan_type', { length: 32 })
       .notNull()
       .$type<(typeof subscriptionPlanEnum)[number]>(),
@@ -229,6 +269,12 @@ export const subscriptions = pgTable(
       .default('active')
       .$type<(typeof subscriptionStatusEnum)[number]>(),
     notes: text('notes'),
+    freezeStartDate: date('freeze_start_date'),
+    freezeEndDate: date('freeze_end_date'),
+    originalEndDate: date('original_end_date'),
+    winbackDay7Sent: boolean('winback_day7_sent').notNull().default(false),
+    winbackDay30Sent: boolean('winback_day30_sent').notNull().default(false),
+    winbackDay60Sent: boolean('winback_day60_sent').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -239,9 +285,51 @@ export const subscriptions = pgTable(
   ]
 );
 
+export const affiliateProducts = pgTable(
+  'affiliate_products',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    gymId: uuid('gym_id')
+      .notNull()
+      .references(() => gyms.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    imageUrl: text('image_url'),
+    affiliateUrl: text('affiliate_url').notNull(),
+    tag: varchar('tag', { length: 64 }), // protein / supplement / equipment / apparel / other
+    goalTags: jsonb('goal_tags').$type<string[]>(), // e.g. ['weight_loss', 'muscle_gain']
+    isActive: boolean('is_active').notNull().default(true),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('affiliate_products_gym_id_idx').on(t.gymId)]
+);
+
+export const affiliateClicks = pgTable(
+  'affiliate_clicks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => affiliateProducts.id, { onDelete: 'cascade' }),
+    memberId: uuid('member_id').references(() => members.id, { onDelete: 'set null' }),
+    gymId: uuid('gym_id')
+      .notNull()
+      .references(() => gyms.id, { onDelete: 'cascade' }),
+    clickedAt: timestamp('clicked_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('affiliate_clicks_product_id_idx').on(t.productId),
+    index('affiliate_clicks_gym_id_idx').on(t.gymId),
+  ]
+);
+
 export type GymRow = typeof gyms.$inferSelect;
 export type MemberRow = typeof members.$inferSelect;
 export type MealPlanRow = typeof mealPlans.$inferSelect;
 export type MealPlanTemplateRow = typeof mealPlanTemplates.$inferSelect;
 export type TrainerBriefRow = typeof trainerBriefs.$inferSelect;
 export type SubscriptionRow = typeof subscriptions.$inferSelect;
+export type SubscriptionTypeRow = typeof subscriptionTypes.$inferSelect;
+export type AffiliateProductRow = typeof affiliateProducts.$inferSelect;
+export type AffiliateClickRow = typeof affiliateClicks.$inferSelect;

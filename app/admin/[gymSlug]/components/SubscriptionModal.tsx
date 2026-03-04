@@ -7,6 +7,13 @@ import type { SheetRow } from '@/types';
 export type PlanType = 'monthly' | 'quarterly' | 'half_yearly' | 'annual';
 export type PaymentMethod = 'cash' | 'upi' | 'card' | 'bank_transfer' | 'other';
 
+interface SubscriptionType {
+  id: string;
+  name: string;
+  color: string;
+  isActive: boolean;
+}
+
 const PLAN_OPTIONS: { value: PlanType; label: string; months: number; suggestedAmount: number }[] = [
   { value: 'monthly', label: 'Monthly', months: 1, suggestedAmount: 1500 },
   { value: 'quarterly', label: 'Quarterly (3 months)', months: 3, suggestedAmount: 4000 },
@@ -52,6 +59,7 @@ export function SubscriptionModal({
   const today = new Date().toISOString().slice(0, 10);
 
   const [memberId, setMemberId] = useState(preselectedMemberDbId ?? '');
+  const [typeId, setTypeId] = useState('');
   const [planType, setPlanType] = useState<PlanType>('monthly');
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(addMonths(today, 1));
@@ -60,6 +68,14 @@ export function SubscriptionModal({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [subTypes, setSubTypes] = useState<SubscriptionType[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/admin/subscription-types?gymSlug=${gymSlug}`)
+      .then((r) => r.json())
+      .then((d) => setSubTypes((d.types ?? []).filter((t: SubscriptionType) => t.isActive)))
+      .catch(() => {});
+  }, [gymSlug]);
 
   // Auto-compute end date when plan or start changes
   useEffect(() => {
@@ -85,6 +101,7 @@ export function SubscriptionModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           memberId,
+          typeId: typeId || undefined,
           planType,
           startDate,
           endDate,
@@ -154,9 +171,44 @@ export function SubscriptionModal({
             </select>
           </div>
 
+          {/* Subscription type */}
+          {subTypes.length > 0 && (
+            <div>
+              <label className={labelCls}>Subscription Type</label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTypeId('')}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                    typeId === ''
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                      : 'border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-zinc-400 hover:border-gray-300 dark:hover:border-zinc-700'
+                  }`}
+                >
+                  General
+                </button>
+                {subTypes.map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => setTypeId(st.id)}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                      typeId === st.id
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                        : 'border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-zinc-400 hover:border-gray-300 dark:hover:border-zinc-700'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: st.color }} />
+                    {st.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Plan type */}
           <div>
-            <label className={labelCls}>Plan *</label>
+            <label className={labelCls}>Duration *</label>
             <div className="grid grid-cols-2 gap-2">
               {PLAN_OPTIONS.map((p) => (
                 <button

@@ -8,7 +8,7 @@ import {
   DAY_COUNT_MAP,
   DURATION_OPTIONS,
   PT_OPTIONS,
-  SUPPLEMENT_OPTIONS,
+  BUDGET_FOR_SUPPLEMENTS_OPTIONS,
   STEP_META,
 } from '@/lib/onboarding-steps';
 
@@ -201,7 +201,7 @@ export default function Step5Commitment({ primaryColor = '#1A56DB' }: Step5Commi
       <div className="space-y-2">
         <Label className="text-sm font-medium text-gray-700">Supplement Budget</Label>
         <div className="grid grid-cols-2 gap-2">
-          {SUPPLEMENT_OPTIONS.map((opt) => (
+          {BUDGET_FOR_SUPPLEMENTS_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"

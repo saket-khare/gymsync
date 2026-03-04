@@ -13,6 +13,10 @@ import {
   CaretDownIcon as CaretDown,
   DotsThreeIcon as DotsThree,
   ReceiptIcon as Receipt,
+  BellIcon as Bell,
+  PauseIcon as Pause,
+  PlayIcon as Play,
+  XCircleIcon as XCircle,
 } from '@phosphor-icons/react';
 import type { SheetRow, GymConfig } from '@/types';
 import { SubscriptionModal } from './SubscriptionModal';
@@ -22,6 +26,9 @@ type SubStatus = 'active' | 'expired' | 'cancelled' | 'paused';
 interface SubscriptionEntry {
   id: string;
   memberId: string;
+  typeId: string | null;
+  typeName: string | null;
+  typeColor: string | null;
   planType: string;
   startDate: string;
   endDate: string;
@@ -29,6 +36,9 @@ interface SubscriptionEntry {
   paymentMethod: string;
   status: SubStatus;
   notes: string | null;
+  freezeStartDate?: string | null;
+  freezeEndDate?: string | null;
+  originalEndDate?: string | null;
   createdAt: string;
   firstName: string;
   lastName: string;
@@ -124,8 +134,15 @@ function StatCard({
 }
 
 type StatusFilter = 'all' | SubStatus;
+type TypeFilter = 'all' | string;
 type SortKey = 'name' | 'plan' | 'endDate' | 'amount';
 type SortDir = 'asc' | 'desc';
+
+interface SubType {
+  id: string;
+  name: string;
+  color: string;
+}
 
 export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps) {
   const [subscriptions, setSubscriptions] = useState<SubscriptionEntry[]>([]);
@@ -138,14 +155,19 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
     null
   );
   const [historyMember, setHistoryMember] = useState<SubscriptionEntry | null>(null);
-  const [history, setHistory] = useState<SubscriptionEntry[]>([]);
+  const [history, setHistory] = useState<(SubscriptionEntry & { typeName?: string | null; typeColor?: string | null })[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [freezeModalSub, setFreezeModalSub] = useState<SubscriptionEntry | null>(null);
+  const [freezeEndDate, setFreezeEndDate] = useState('');
+  const [actionsOpenId, setActionsOpenId] = useState<string | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('endDate');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [subTypes, setSubTypes] = useState<SubType[]>([]);
 
   async function fetchData() {
     setLoading(true);
@@ -165,6 +187,10 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
 
   useEffect(() => {
     fetchData();
+    fetch(`/api/admin/subscription-types?gymSlug=${gymConfig.slug}`)
+      .then((r) => r.json())
+      .then((d) => setSubTypes(d.types ?? []))
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gymConfig.slug]);
 
@@ -183,6 +209,18 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
     }
   }
 
+  async function sendRenewalReminder(id: string) {
+    try {
+      await fetch('/api/admin/subscriptions/remind', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: id }),
+      });
+    } catch {
+      // silent — not critical
+    }
+  }
+
   async function handleStatusChange(id: string, status: SubStatus) {
     setUpdatingId(id);
     try {
@@ -192,10 +230,45 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
         body: JSON.stringify({ id, status }),
       });
       setSubscriptions((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)));
-      if (stats) {
-        // Rough recompute without refetch
+      if (stats) fetchData();
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  async function handleFreeze(sub: SubscriptionEntry, endDate: string) {
+    if (!endDate) return;
+    setUpdatingId(sub.id);
+    try {
+      const res = await fetch('/api/admin/subscriptions/freeze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: sub.id, freezeEndDate: endDate }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFreezeModalSub(null);
+        setFreezeEndDate('');
         fetchData();
+      } else {
+        alert(data.error ?? 'Failed to freeze');
       }
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  async function handleUnfreeze(sub: SubscriptionEntry) {
+    setUpdatingId(sub.id);
+    try {
+      const res = await fetch('/api/admin/subscriptions/unfreeze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: sub.id }),
+      });
+      const data = await res.json();
+      if (data.success) fetchData();
+      else alert(data.error ?? 'Failed to unfreeze');
     } finally {
       setUpdatingId(null);
     }
@@ -213,6 +286,13 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
   const filtered = useMemo(() => {
     let list = subscriptions;
     if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter);
+    if (typeFilter !== 'all') {
+      if (typeFilter === '__none__') {
+        list = list.filter((s) => !s.typeId);
+      } else {
+        list = list.filter((s) => s.typeId === typeFilter);
+      }
+    }
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -225,13 +305,13 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
     list = [...list].sort((a, b) => {
       let cmp = 0;
       if (sortKey === 'name') cmp = `${a.firstName}${a.lastName}`.localeCompare(`${b.firstName}${b.lastName}`);
-      else if (sortKey === 'plan') cmp = a.planType.localeCompare(b.planType);
+      else if (sortKey === 'plan') cmp = (a.typeName ?? a.planType).localeCompare(b.typeName ?? b.planType);
       else if (sortKey === 'endDate') cmp = a.endDate.localeCompare(b.endDate);
       else if (sortKey === 'amount') cmp = a.amountPaid - b.amountPaid;
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return list;
-  }, [subscriptions, statusFilter, search, sortKey, sortDir]);
+  }, [subscriptions, statusFilter, typeFilter, search, sortKey, sortDir]);
 
   const expiringSoon = useMemo(
     () =>
@@ -367,6 +447,19 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
           />
+          {subTypes.length > 0 && (
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+            >
+              <option value="all">All types</option>
+              <option value="__none__">General (no type)</option>
+              {subTypes.map((st) => (
+                <option key={st.id} value={st.id}>{st.name}</option>
+              ))}
+            </select>
+          )}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
@@ -471,7 +564,17 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
                           <div className="text-xs text-gray-500 dark:text-zinc-400">{s.email}</div>
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-zinc-300">
-                          <div>{PLAN_LABEL[s.planType] ?? s.planType}</div>
+                          <div className="flex items-center gap-1.5">
+                            {s.typeName && s.typeColor && (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                                style={{ backgroundColor: s.typeColor }}
+                              >
+                                {s.typeName}
+                              </span>
+                            )}
+                            <span className="text-sm">{PLAN_LABEL[s.planType] ?? s.planType}</span>
+                          </div>
                           <div className="text-xs text-gray-400 dark:text-zinc-500">
                             {PAYMENT_LABEL[s.paymentMethod] ?? s.paymentMethod}
                           </div>
@@ -520,6 +623,16 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
                             >
                               Renew
                             </button>
+                            {s.status === 'active' && (
+                              <button
+                                type="button"
+                                onClick={() => sendRenewalReminder(s.id)}
+                                className="p-1.5 rounded-md text-gray-400 dark:text-zinc-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-500 transition-colors"
+                                title="Send renewal reminder email"
+                              >
+                                <Bell className="w-4 h-4" />
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => {
@@ -531,17 +644,68 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
                             >
                               <Receipt className="w-4 h-4" />
                             </button>
-                            {s.status === 'active' && (
+                            <div className="relative">
                               <button
                                 type="button"
                                 disabled={updatingId === s.id}
-                                onClick={() => handleStatusChange(s.id, 'cancelled')}
-                                className="p-1.5 rounded-md text-gray-400 dark:text-zinc-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 transition-colors"
-                                title="Cancel subscription"
+                                onClick={() => setActionsOpenId(actionsOpenId === s.id ? null : s.id)}
+                                className="p-1.5 rounded-md text-gray-400 dark:text-zinc-500 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors"
+                                title="Actions"
                               >
                                 <DotsThree className="w-4 h-4" />
                               </button>
-                            )}
+                              {actionsOpenId === s.id && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-10"
+                                    aria-hidden
+                                    onClick={() => setActionsOpenId(null)}
+                                  />
+                                  <div className="absolute right-0 top-full z-20 mt-1 w-48 py-1 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#131316] shadow-lg">
+                                    {s.status === 'active' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setFreezeModalSub(s);
+                                          setFreezeEndDate('');
+                                          setActionsOpenId(null);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-2"
+                                      >
+                                        <Pause className="w-4 h-4" />
+                                        Freeze membership
+                                      </button>
+                                    )}
+                                    {s.status === 'paused' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          handleUnfreeze(s);
+                                          setActionsOpenId(null);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-2"
+                                      >
+                                        <Play className="w-4 h-4" />
+                                        Unfreeze
+                                      </button>
+                                    )}
+                                    {(s.status === 'active' || s.status === 'paused') && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          handleStatusChange(s.id, 'cancelled');
+                                          setActionsOpenId(null);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2"
+                                      >
+                                        <XCircle className="w-4 h-4" />
+                                        Cancel membership
+                                      </button>
+                                    )}
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -572,7 +736,15 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
                         {s.status}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-700 dark:text-zinc-300">
+                    <div className="flex items-center gap-2 flex-wrap text-sm text-gray-700 dark:text-zinc-300">
+                      {s.typeName && s.typeColor && (
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                          style={{ backgroundColor: s.typeColor }}
+                        >
+                          {s.typeName}
+                        </span>
+                      )}
                       <span>{PLAN_LABEL[s.planType] ?? s.planType}</span>
                       <span className="text-gray-400 dark:text-zinc-500">·</span>
                       <span className="font-medium tabular-nums">
@@ -586,7 +758,7 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
                       {isOverdue && ` · ${Math.abs(days)}d overdue`}
                       {isExpiringSoon && ` · ${days === 0 ? 'today' : `${days}d left`}`}
                     </div>
-                    <div className="flex gap-2 pt-1">
+                    <div className="flex flex-wrap gap-2 pt-1">
                       <button
                         type="button"
                         onClick={() => {
@@ -607,6 +779,38 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
                       >
                         History
                       </button>
+                      {s.status === 'active' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFreezeModalSub(s);
+                            setFreezeEndDate('');
+                          }}
+                          className="text-xs px-3 py-1.5 rounded-md border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+                        >
+                          Freeze
+                        </button>
+                      )}
+                      {s.status === 'paused' && (
+                        <button
+                          type="button"
+                          disabled={!!updatingId}
+                          onClick={() => handleUnfreeze(s)}
+                          className="text-xs px-3 py-1.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                        >
+                          Unfreeze
+                        </button>
+                      )}
+                      {(s.status === 'active' || s.status === 'paused') && (
+                        <button
+                          type="button"
+                          disabled={!!updatingId}
+                          onClick={() => handleStatusChange(s.id, 'cancelled')}
+                          className="text-xs px-3 py-1.5 rounded-md border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -663,9 +867,19 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
                       className="flex items-start justify-between gap-4 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-0"
                     >
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">
-                          {PLAN_LABEL[h.planType] ?? h.planType}
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                          {h.typeName && h.typeColor && (
+                            <span
+                              className="inline-flex px-1.5 py-0.5 rounded-full text-xs font-medium text-white"
+                              style={{ backgroundColor: h.typeColor }}
+                            >
+                              {h.typeName}
+                            </span>
+                          )}
+                          <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">
+                            {PLAN_LABEL[h.planType] ?? h.planType}
+                          </p>
+                        </div>
                         <p className="text-xs text-gray-500 dark:text-zinc-400">
                           {formatDate(h.startDate)} → {formatDate(h.endDate)}
                         </p>
@@ -688,6 +902,57 @@ export function SubscriptionsPage({ members, gymConfig }: SubscriptionsPageProps
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Freeze membership modal */}
+      {freezeModalSub && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              setFreezeModalSub(null);
+              setFreezeEndDate('');
+            }}
+          />
+          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-[#131316] border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-5">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100 mb-1">
+              Freeze membership
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
+              {freezeModalSub.firstName} {freezeModalSub.lastName} — end date will be extended when you unfreeze.
+            </p>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">
+              Freeze until (date)
+            </label>
+            <input
+              type="date"
+              value={freezeEndDate}
+              onChange={(e) => setFreezeEndDate(e.target.value)}
+              min={new Date().toISOString().slice(0, 10)}
+              className="w-full rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setFreezeModalSub(null);
+                  setFreezeEndDate('');
+                }}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!freezeEndDate || updatingId === freezeModalSub.id}
+                onClick={() => handleFreeze(freezeModalSub, freezeEndDate)}
+                className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium disabled:opacity-50"
+              >
+                Freeze
+              </button>
             </div>
           </div>
         </div>

@@ -63,6 +63,8 @@ export interface MemberFormData {
   // Metadata
   gymSlug: string;
   submittedAt: string;
+  /** Meal planner context from onboarding (bodyGoal, whatDoYouEat, cantEat, whoPreparesMeals, etc.). */
+  onboardingExtras?: Record<string, unknown>;
 }
 
 // AI Generation outputs
@@ -121,7 +123,16 @@ export interface TrainerBrief {
   generatedAt: string;
 }
 
-// For Google Sheets rows
+export type MemberStatus = 'lead' | 'converted' | 'lapsed';
+export type LeadSource =
+  | 'walk_in'
+  | 'referral'
+  | 'instagram'
+  | 'facebook'
+  | 'website'
+  | 'other';
+
+// For Google Sheets rows / DB member rows in admin
 export interface SheetRow extends MemberFormData {
   id?: string; // DB UUID — present when loaded from Postgres
   rowId: string;
@@ -131,6 +142,9 @@ export interface SheetRow extends MemberFormData {
   day3Sent: boolean;
   day7Sent: boolean;
   day30Sent: boolean;
+  memberStatus?: MemberStatus;
+  leadSource?: LeadSource;
+  convertedAt?: string;
 }
 
 // API Response types

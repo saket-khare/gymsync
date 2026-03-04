@@ -12,12 +12,13 @@ import {
   XIcon as Close,
   ArrowsClockwiseIcon as RefreshCw,
   SignOutIcon as LogOut,
+  LinkIcon as LinkIcon,
 } from '@phosphor-icons/react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { TestEmailButton } from './TestEmailButton';
 import type { GymConfig } from '@/types';
 
-export type AdminPage = 'overview' | 'members' | 'mealPlans' | 'subscriptions' | 'settings';
+export type AdminPage = 'overview' | 'members' | 'mealPlans' | 'subscriptions' | 'affiliates' | 'settings';
 
 interface AdminSidebarProps {
   gymConfig: GymConfig;
@@ -29,9 +30,10 @@ interface AdminSidebarProps {
 
 const NAV_ITEMS: { id: AdminPage; label: string; icon: typeof ChartLine }[] = [
   { id: 'overview', label: 'Overview', icon: ChartLine },
-  { id: 'members', label: 'Members', icon: Users },
+  { id: 'members', label: 'Leads & Members', icon: Users },
   { id: 'mealPlans', label: 'Meal Plans', icon: MealPlans },
   { id: 'subscriptions', label: 'Subscriptions', icon: CreditCard },
+  { id: 'affiliates', label: 'Affiliate Products', icon: LinkIcon },
   { id: 'settings', label: 'Settings', icon: Gear },
 ];
 

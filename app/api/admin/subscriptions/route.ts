@@ -65,6 +65,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let body: {
     memberId: string;
+    typeId?: string;
     planType: string;
     startDate: string;
     endDate: string;
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { memberId, planType, startDate, endDate, amountPaid, paymentMethod, notes } = body;
+  const { memberId, typeId, planType, startDate, endDate, amountPaid, paymentMethod, notes } = body;
   if (!memberId || !planType || !startDate || !endDate || amountPaid == null || !paymentMethod) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const sub = await createSubscription({
       gymId,
       memberId,
+      typeId: typeId || undefined,
       planType: planType as 'monthly' | 'quarterly' | 'half_yearly' | 'annual',
       startDate,
       endDate,

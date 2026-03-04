@@ -98,6 +98,37 @@ export function calculateTDEE(
   return Math.round(bmr * multiplier);
 }
 
+export interface BmiResult {
+  value: number;
+  category: 'Underweight' | 'Normal' | 'Overweight' | 'Obese';
+  color: string; // tailwind color class
+}
+
+export function calculateBmi(weightKg: number, heightCm: number): BmiResult {
+  const heightM = heightCm / 100;
+  const bmi = weightKg / (heightM * heightM);
+  const value = Math.round(bmi * 10) / 10;
+
+  let category: BmiResult['category'];
+  let color: string;
+
+  if (bmi < 18.5) {
+    category = 'Underweight';
+    color = 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20';
+  } else if (bmi < 25) {
+    category = 'Normal';
+    color = 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20';
+  } else if (bmi < 30) {
+    category = 'Overweight';
+    color = 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20';
+  } else {
+    category = 'Obese';
+    color = 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/20';
+  }
+
+  return { value, category, color };
+}
+
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result

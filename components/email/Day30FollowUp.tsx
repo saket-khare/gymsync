@@ -11,12 +11,19 @@ import {
 } from '@react-email/components';
 import type { GymConfig } from '@/types';
 
+interface AffiliateProduct {
+  name: string;
+  affiliateUrl: string;
+  description?: string;
+}
+
 interface Day30FollowUpProps {
   memberName: string;
   gymConfig: GymConfig;
+  affiliateProducts?: AffiliateProduct[];
 }
 
-export default function Day30FollowUp({ memberName, gymConfig }: Day30FollowUpProps) {
+export default function Day30FollowUp({ memberName, gymConfig, affiliateProducts = [] }: Day30FollowUpProps) {
   const firstName = memberName.split(' ')[0];
   const primaryColor = gymConfig.primaryColor ?? '#1A56DB';
 
@@ -93,6 +100,38 @@ export default function Day30FollowUp({ memberName, gymConfig }: Day30FollowUpPr
               Your trainer {gymConfig.trainerName} has also been CC&apos;d on this email and is
               looking forward to your review.
             </Text>
+
+            {affiliateProducts.length > 0 && (
+              <Section style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
+                <Text style={{ fontWeight: '700', fontSize: '14px', color: '#374151', margin: '0 0 12px' }}>
+                  Recommended for you
+                </Text>
+                {affiliateProducts.slice(0, 2).map((product, i) => (
+                  <Section key={i} style={{ marginBottom: '12px' }}>
+                    <Button
+                      href={product.affiliateUrl}
+                      style={{
+                        backgroundColor: '#f3f4f6',
+                        color: primaryColor,
+                        padding: '10px 16px',
+                        borderRadius: '8px',
+                        fontWeight: '600',
+                        fontSize: '14px',
+                        display: 'block',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {product.name}
+                    </Button>
+                    {product.description && (
+                      <Text style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>
+                        {product.description}
+                      </Text>
+                    )}
+                  </Section>
+                ))}
+              </Section>
+            )}
           </Section>
 
           <Text style={{ color: '#9ca3af', fontSize: '11px', textAlign: 'center', marginTop: '16px' }}>
