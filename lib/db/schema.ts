@@ -31,6 +31,7 @@ const budgetEnum = ['none', 'low', 'medium', 'high'] as const;
 const flexibilityEnum = ['touch_toes', 'almost', 'cant_reach'] as const;
 const processingStatusEnum = ['pending', 'processing', 'processed', 'failed'] as const;
 const upsellSignalEnum = ['HIGH', 'MEDIUM', 'LOW'] as const;
+export const leadSubstatusEnum = ['new', 'contacted', 'visited', 'converted'] as const;
 
 export const memberStatusEnum = ['lead', 'converted', 'lapsed'] as const;
 export const leadSourceEnum = ['walk_in', 'referral', 'instagram', 'facebook', 'website', 'other'] as const;
@@ -159,6 +160,10 @@ export const members = pgTable(
     followUpDay30Sent: boolean('follow_up_day30_sent').notNull().default(false),
     ptOfferSent: boolean('pt_offer_sent').notNull().default(false),
     ptOfferSentAt: timestamp('pt_offer_sent_at', { withTimezone: true }),
+    leadSubstatus: varchar('lead_substatus', { length: 32 })
+      .notNull()
+      .default('new')
+      .$type<(typeof leadSubstatusEnum)[number]>(),
     /** Meal planner context: bodyGoal, triedFitBefore, mealsPerDay, whatDoYouEat, cantEat, whoPreparesMeals, cookingElaboration, supplementsOpen, trainedPtBefore, homeEquipmentLevel, etc. */
     onboardingExtras: jsonb('onboarding_extras'),
   },

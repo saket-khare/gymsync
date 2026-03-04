@@ -14,12 +14,27 @@ import {
   UserPlusIcon as UserPlus,
 } from '@phosphor-icons/react';
 import { formatDateTime, goalLabel, dietLabel, calculateBmi } from '@/lib/utils';
-import type { GymConfig, SheetRow } from '@/types';
+import type { GymConfig, SheetRow, LeadSubstatus } from '@/types';
 import { STATUS_STYLES } from './constants';
 import { MemberRowExpanded } from './MemberRowExpanded';
+import { WhatsAppButton } from './WhatsAppOutreach';
 
 export type SortKey = 'name' | 'goal' | 'diet' | 'submitted';
 export type SortDir = 'asc' | 'desc';
+
+const SUBSTATUS_LABELS: Record<LeadSubstatus, string> = {
+  new: 'New',
+  contacted: 'Contacted',
+  visited: 'Visited',
+  converted: 'Converted',
+};
+
+const SUBSTATUS_COLORS: Record<LeadSubstatus, string> = {
+  new: 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400',
+  contacted: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  visited: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  converted: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+};
 
 interface MembersTableProps {
   members: SheetRow[];
@@ -32,6 +47,8 @@ interface MembersTableProps {
   showConvertButton?: boolean;
   onConvertToMember?: (member: SheetRow) => void;
   convertingId?: string | null;
+  substatusOverrides?: Record<string, LeadSubstatus>;
+  onSubstatusChange?: (member: SheetRow, substatus: LeadSubstatus) => void;
 }
 
 function SortHeader({
@@ -79,6 +96,8 @@ export function MembersTable({
   showConvertButton = false,
   onConvertToMember,
   convertingId = null,
+  substatusOverrides = {},
+  onSubstatusChange,
 }: MembersTableProps) {
   if (members.length === 0) {
     return (
@@ -171,10 +190,28 @@ export function MembersTable({
                             )}
                             {member.processingStatus}
                           </span>
+                          {showConvertButton && onSubstatusChange && (
+                            <select
+                              value={substatusOverrides[member.id ?? ''] ?? member.leadSubstatus ?? 'new'}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                onSubstatusChange(member, e.target.value as LeadSubstatus);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className={`text-[11px] font-medium px-2 py-0.5 rounded border-0 cursor-pointer focus:outline-none ${SUBSTATUS_COLORS[substatusOverrides[member.id ?? ''] ?? member.leadSubstatus ?? 'new']}`}
+                            >
+                              {(Object.keys(SUBSTATUS_LABELS) as LeadSubstatus[]).map((s) => (
+                                <option key={s} value={s}>{SUBSTATUS_LABELS[s]}</option>
+                              ))}
+                            </select>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      {showConvertButton && (
+                        <WhatsAppButton member={member} gymConfig={gymConfig} />
+                      )}
                       {showConvertButton && onConvertToMember && (
                         <button
                           type="button"
@@ -261,6 +298,7 @@ export function MembersTable({
               </th>
               <th className="px-6 py-3 font-medium">BMI</th>
               <th className="px-6 py-3 font-medium">Status</th>
+              {showConvertButton && <th className="px-6 py-3 font-medium">Lead Status</th>}
               <th className="px-6 py-3">
                 <SortHeader
                   label="Submitted"
@@ -351,11 +389,33 @@ export function MembersTable({
                           {member.processingStatus}
                         </span>
                       </td>
+                      {showConvertButton && (
+                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                          {onSubstatusChange ? (
+                            <select
+                              value={substatusOverrides[member.id ?? ''] ?? member.leadSubstatus ?? 'new'}
+                              onChange={(e) => onSubstatusChange(member, e.target.value as LeadSubstatus)}
+                              className={`text-xs font-medium px-2 py-1 rounded border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-400 ${SUBSTATUS_COLORS[substatusOverrides[member.id ?? ''] ?? member.leadSubstatus ?? 'new']}`}
+                            >
+                              {(Object.keys(SUBSTATUS_LABELS) as LeadSubstatus[]).map((s) => (
+                                <option key={s} value={s}>{SUBSTATUS_LABELS[s]}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${SUBSTATUS_COLORS[member.leadSubstatus ?? 'new']}`}>
+                              {SUBSTATUS_LABELS[member.leadSubstatus ?? 'new']}
+                            </span>
+                          )}
+                        </td>
+                      )}
                       <td className="px-6 py-4 text-xs text-gray-500 dark:text-zinc-500 tabular-nums">
                         {member.submittedAt ? formatDateTime(member.submittedAt) : '—'}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {showConvertButton && (
+                            <WhatsAppButton member={member} gymConfig={gymConfig} />
+                          )}
                           {showConvertButton && onConvertToMember && (
                             <button
                               type="button"

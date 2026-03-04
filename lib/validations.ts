@@ -32,7 +32,9 @@ export const step2Schema = z.object({
     'general_fitness',
     'competition_prep',
   ]),
+  bodyGoal: z.enum(['slim_lean', 'athletic_toned', 'bigger_muscular']).optional(),
   goalUrgency: z.enum(['casual', 'moderate', 'aggressive']),
+  triedFitBefore: z.enum(['never_started', 'had_phases', 'was_consistent']).optional(),
   timelineMonths: z.coerce.number().refine((v) => [3, 6, 12, 24].includes(v), {
     message: 'Please select a valid timeline',
   }) as z.ZodType<3 | 6 | 12 | 24>,
@@ -46,11 +48,10 @@ export const step3Schema = z.object({
   selfRatedFitness: z.coerce.number().refine((v) => [1, 2, 3, 4, 5].includes(v), {
     message: 'Please rate your fitness level',
   }) as z.ZodType<1 | 2 | 3 | 4 | 5>,
-  gymExperience: z.enum(['complete_beginner', 'beginner', 'intermediate', 'advanced']),
+  timeSinceTrained: z.enum(['never_routine', 'more_than_year', '3_12_months', 'currently_active']),
 });
 
 export const step4Schema = z.object({
-  dietType: z.enum(['vegetarian', 'non_vegetarian', 'vegan', 'eggetarian', 'keto', 'other']),
   sleepHoursPerNight: z.coerce.number().min(4).max(12),
   stressLevel: z.coerce.number().refine((v) => [1, 2, 3, 4, 5].includes(v), {
     message: 'Please select your stress level',
@@ -62,18 +63,26 @@ export const step4Schema = z.object({
 });
 
 export const step5Schema = z.object({
+  whatDoYouEat: z.array(z.string()).min(1, 'Please select at least one'),
+  cantEat: z.array(z.string()).default([]),
+  whoPreparesMeals: z.enum(['someone_home', 'self', 'hostel', 'order_in', 'mix']),
+  cookingElaboration: z.enum(['very_simple', 'basic', 'full_meals', 'adventurous']).optional(),
+  supplementsOpen: z.enum(['yes', 'maybe', 'whole_food']),
+});
+
+export const step6Schema = z.object({
   daysPerWeekAvailable: z.coerce.number().refine((v) => [2, 3, 4, 5, 6].includes(v), {
     message: 'Please select days per week',
   }) as z.ZodType<2 | 3 | 4 | 5 | 6>,
   sessionDurationMinutes: z.coerce.number().refine((v) => [30, 45, 60, 90].includes(v), {
     message: 'Please select session duration',
   }) as z.ZodType<30 | 45 | 60 | 90>,
-  hasHomeEquipment: z.boolean(),
+  homeEquipmentLevel: z.enum(['none', 'basic', 'full']),
   interestedInPT: z.enum(['yes', 'maybe', 'no']),
-  budgetForSupplements: z.enum(['none', 'low', 'medium', 'high']),
+  trainedPtBefore: z.enum(['never', 'briefly', 'regularly']).optional(),
 });
 
-export const step6Schema = z.object({
+export const step7Schema = z.object({
   pushUpCount: z.coerce.number().min(0).max(500).optional().or(z.literal('')).transform(v => v === '' ? undefined : v),
   plankHoldSeconds: z.coerce.number().min(0).max(3600).optional().or(z.literal('')).transform(v => v === '' ? undefined : v),
   flexibilityTest: z.enum(['touch_toes', 'almost', 'cant_reach']).optional(),
@@ -85,7 +94,6 @@ export const ONBOARDING_EXTRAS_KEYS = [
   'bodyGoal',
   'triedFitBefore',
   'timeSinceTrained',
-  'mealsPerDay',
   'whatDoYouEat',
   'cantEat',
   'whoPreparesMeals',
@@ -101,10 +109,11 @@ export const fullMemberSchema = step1Schema
   .merge(step4Schema)
   .merge(step5Schema)
   .merge(step6Schema)
+  .merge(step7Schema)
   .extend({
     gymSlug: z.string().min(1),
     submittedAt: z.string(),
-    onboardingExtras: z.record(z.unknown()).optional(),
+    onboardingExtras: z.record(z.string(), z.unknown()).optional(),
   });
 
 export type Step1Data = z.infer<typeof step1Schema>;
@@ -113,4 +122,5 @@ export type Step3Data = z.infer<typeof step3Schema>;
 export type Step4Data = z.infer<typeof step4Schema>;
 export type Step5Data = z.infer<typeof step5Schema>;
 export type Step6Data = z.infer<typeof step6Schema>;
+export type Step7Data = z.infer<typeof step7Schema>;
 export type FullMemberData = z.infer<typeof fullMemberSchema>;

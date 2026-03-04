@@ -5,11 +5,37 @@ import { useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { FITNESS_LEVELS, EXPERIENCE_OPTIONS, STEP_META } from '@/lib/onboarding-steps';
+import { FITNESS_LEVELS, TIME_SINCE_TRAINED, STEP_META } from '@/lib/onboarding-steps';
+import {
+  Bed,
+  PersonSimpleWalk,
+  PersonSimpleRun,
+  Fire,
+  Lightning,
+  CalendarX,
+  CalendarCheck,
+  Clock,
+  Heartbeat,
+} from '@phosphor-icons/react';
 
 interface Step3CurrentStatusProps {
   primaryColor?: string;
 }
+
+const FITNESS_ICONS: Record<number, React.ElementType> = {
+  1: Bed,
+  2: PersonSimpleWalk,
+  3: PersonSimpleRun,
+  4: Fire,
+  5: Lightning,
+};
+
+const TIME_SINCE_ICONS: Record<string, React.ElementType> = {
+  never_routine: CalendarX,
+  more_than_year: CalendarX,
+  '3_12_months': Clock,
+  currently_active: Heartbeat,
+};
 
 export default function Step3CurrentStatus({ primaryColor = '#1A56DB' }: Step3CurrentStatusProps) {
   const {
@@ -25,7 +51,7 @@ export default function Step3CurrentStatus({ primaryColor = '#1A56DB' }: Step3Cu
   const [inchesVal, setInchesVal] = useState('');
 
   const selectedFitness = watch('selfRatedFitness');
-  const selectedExperience = watch('gymExperience');
+  const selectedTimeSince = watch('timeSinceTrained');
 
   function handleWeightChange(val: string) {
     const num = parseFloat(val);
@@ -50,15 +76,15 @@ export default function Step3CurrentStatus({ primaryColor = '#1A56DB' }: Step3Cu
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">{STEP_META[2].title}</h2>
-        <p className="text-gray-500 mt-1 text-sm">{STEP_META[2].subtitle}</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{STEP_META[2].title}</h2>
+        <p className="text-gray-500 dark:text-zinc-400 mt-1 text-sm">{STEP_META[2].subtitle}</p>
       </div>
 
       {/* Weight */}
       <div className="space-y-1.5">
         <div className="flex justify-between items-center">
-          <Label className="text-sm font-medium text-gray-700">Weight</Label>
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
+          <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Weight</Label>
+          <div className="flex bg-gray-100 dark:bg-zinc-800 rounded-lg p-0.5">
             {(['kg', 'lbs'] as const).map((u) => (
               <button
                 key={u}
@@ -66,7 +92,7 @@ export default function Step3CurrentStatus({ primaryColor = '#1A56DB' }: Step3Cu
                 onClick={() => setWeightUnit(u)}
                 className={cn(
                   'px-3 py-1 text-xs font-medium rounded-md transition-all',
-                  weightUnit === u ? 'bg-white shadow text-gray-900' : 'text-gray-500',
+                  weightUnit === u ? 'bg-white dark:bg-zinc-700 shadow text-gray-900 dark:text-zinc-100' : 'text-gray-500 dark:text-zinc-400',
                 )}
               >
                 {u}
@@ -91,8 +117,8 @@ export default function Step3CurrentStatus({ primaryColor = '#1A56DB' }: Step3Cu
       {/* Height */}
       <div className="space-y-1.5">
         <div className="flex justify-between items-center">
-          <Label className="text-sm font-medium text-gray-700">Height</Label>
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
+          <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Height</Label>
+          <div className="flex bg-gray-100 dark:bg-zinc-800 rounded-lg p-0.5">
             {(['cm', 'ft'] as const).map((u) => (
               <button
                 key={u}
@@ -100,7 +126,7 @@ export default function Step3CurrentStatus({ primaryColor = '#1A56DB' }: Step3Cu
                 onClick={() => setHeightUnit(u)}
                 className={cn(
                   'px-3 py-1 text-xs font-medium rounded-md transition-all',
-                  heightUnit === u ? 'bg-white shadow text-gray-900' : 'text-gray-500',
+                  heightUnit === u ? 'bg-white dark:bg-zinc-700 shadow text-gray-900 dark:text-zinc-100' : 'text-gray-500 dark:text-zinc-400',
                 )}
               >
                 {u}
@@ -152,7 +178,7 @@ export default function Step3CurrentStatus({ primaryColor = '#1A56DB' }: Step3Cu
 
       {/* Body fat (optional) */}
       <div className="space-y-1.5">
-        <Label className="text-sm font-medium text-gray-700">
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
           Body Fat % <span className="text-gray-400">(optional)</span>
         </Label>
         <Input
@@ -166,74 +192,93 @@ export default function Step3CurrentStatus({ primaryColor = '#1A56DB' }: Step3Cu
 
       {/* Self-rated fitness */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-gray-700">
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
           How fit do you feel right now?
         </Label>
         <div className="flex gap-2">
-          {FITNESS_LEVELS.map((level) => (
-            <button
-              key={level.value}
-              type="button"
-              onClick={() => setValue('selfRatedFitness', level.value, { shouldValidate: true })}
-              className={cn(
-                'flex-1 flex flex-col items-center p-2 rounded-xl border-2 transition-all duration-200',
-                selectedFitness === level.value
-                  ? 'border-current shadow-sm'
-                  : 'border-gray-200 hover:border-gray-300',
-              )}
-              style={
-                selectedFitness === level.value
-                  ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
-                  : {}
-              }
-            >
-              <span className="text-xl">{level.emoji}</span>
-              <span className="text-xs text-gray-500 mt-1 leading-tight text-center">
-                {level.label}
-              </span>
-            </button>
-          ))}
+          {FITNESS_LEVELS.map((level) => {
+            const Icon = FITNESS_ICONS[level.value];
+            const isSelected = selectedFitness === level.value;
+            return (
+              <button
+                key={level.value}
+                type="button"
+                onClick={() => setValue('selfRatedFitness', level.value, { shouldValidate: true })}
+                className={cn(
+                  'flex-1 flex flex-col items-center p-2 rounded-xl border-2 transition-all duration-200 min-h-[72px]',
+                  isSelected
+                    ? 'shadow-sm'
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600',
+                )}
+                style={
+                  isSelected
+                    ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
+                    : {}
+                }
+              >
+                {Icon && (
+                  <Icon
+                    size={22}
+                    weight="bold"
+                    style={{ color: isSelected ? primaryColor : '#9CA3AF' }}
+                  />
+                )}
+                <span className="text-xs text-gray-500 dark:text-zinc-400 mt-1 leading-tight text-center">
+                  {level.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
         {errors.selfRatedFitness && (
           <p className="text-xs text-red-500">{String(errors.selfRatedFitness.message)}</p>
         )}
       </div>
 
-      {/* Gym experience */}
+      {/* Time since trained */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-gray-700">Gym Experience</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {EXPERIENCE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setValue('gymExperience', opt.value, { shouldValidate: true })}
-              className={cn(
-                'p-3 rounded-xl border-2 text-left transition-all duration-200',
-                selectedExperience === opt.value
-                  ? 'border-current'
-                  : 'border-gray-200 hover:border-gray-300',
-              )}
-              style={
-                selectedExperience === opt.value
-                  ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
-                  : {}
-              }
-            >
-              <div
-                className="text-sm font-semibold"
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+          How long since you trained regularly?
+        </Label>
+        <div className="space-y-2">
+          {TIME_SINCE_TRAINED.map((opt) => {
+            const Icon = TIME_SINCE_ICONS[opt.value] ?? CalendarCheck;
+            const isSelected = selectedTimeSince === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setValue('timeSinceTrained', opt.value, { shouldValidate: true })}
+                className={cn(
+                  'w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all duration-200',
+                  isSelected
+                    ? ''
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900/50',
+                )}
                 style={
-                  selectedExperience === opt.value ? { color: primaryColor } : { color: '#111827' }
+                  isSelected
+                    ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
+                    : {}
                 }
               >
-                {opt.label}
-              </div>
-              <div className="text-xs text-gray-400">{opt.desc}</div>
-            </button>
-          ))}
+                <Icon
+                  size={18}
+                  weight="bold"
+                  className="shrink-0"
+                  style={{ color: isSelected ? primaryColor : '#6B7280' }}
+                />
+                <span
+                  className="text-sm font-medium"
+                  style={isSelected ? { color: primaryColor } : { color: '#111827' }}
+                >
+                  {opt.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
-        {errors.gymExperience && (
-          <p className="text-xs text-red-500">{String(errors.gymExperience.message)}</p>
+        {errors.timeSinceTrained && (
+          <p className="text-xs text-red-500">{String(errors.timeSinceTrained.message)}</p>
         )}
       </div>
     </div>

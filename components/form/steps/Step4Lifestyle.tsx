@@ -7,15 +7,29 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import {
-  DIET_OPTIONS,
   OCCUPATION_OPTIONS,
   STRESS_LABELS,
   STEP_META,
 } from '@/lib/onboarding-steps';
+import {
+  Desktop,
+  Wrench,
+  Student,
+  Briefcase,
+  DotsThreeCircle,
+} from '@phosphor-icons/react';
 
 interface Step4LifestyleProps {
   primaryColor?: string;
 }
+
+const OCCUPATION_ICONS: Record<string, React.ElementType> = {
+  desk_job: Desktop,
+  active_job: Wrench,
+  student: Student,
+  freelance: Briefcase,
+  other: DotsThreeCircle,
+};
 
 export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4LifestyleProps) {
   const {
@@ -26,7 +40,6 @@ export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4Lifest
   } = useFormContext();
 
   const [showHealthFields, setShowHealthFields] = useState(false);
-  const selectedDiet = watch('dietType');
   const selectedOccupation = watch('occupationType');
   const sleepVal = watch('sleepHoursPerNight') ?? 7;
   const stressVal = watch('stressLevel') ?? 3;
@@ -34,51 +47,59 @@ export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4Lifest
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">{STEP_META[3].title}</h2>
-        <p className="text-gray-500 mt-1 text-sm">{STEP_META[3].subtitle}</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{STEP_META[3].title}</h2>
+        <p className="text-gray-500 dark:text-zinc-400 mt-1 text-sm">{STEP_META[3].subtitle}</p>
       </div>
 
-      {/* Diet Type */}
+      {/* Occupation */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-gray-700">Dietary Preference</Label>
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Occupation Type</Label>
         <div className="grid grid-cols-3 gap-2">
-          {DIET_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setValue('dietType', opt.value, { shouldValidate: true })}
-              className={cn(
-                'p-3 rounded-xl border-2 text-center transition-all duration-200',
-                selectedDiet === opt.value
-                  ? 'border-current'
-                  : 'border-gray-200 hover:border-gray-300',
-              )}
-              style={
-                selectedDiet === opt.value
-                  ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
-                  : {}
-              }
-            >
-              <div className="text-xl">{opt.icon}</div>
-              <div
-                className="text-xs font-medium mt-1"
+          {OCCUPATION_OPTIONS.map((opt) => {
+            const Icon = OCCUPATION_ICONS[opt.value];
+            const isSelected = selectedOccupation === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setValue('occupationType', opt.value, { shouldValidate: true })}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-center transition-all duration-200',
+                  isSelected
+                    ? ''
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900/50',
+                )}
                 style={
-                  selectedDiet === opt.value ? { color: primaryColor } : { color: '#374151' }
+                  isSelected
+                    ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
+                    : {}
                 }
               >
-                {opt.label}
-              </div>
-            </button>
-          ))}
+                {Icon && (
+                  <Icon
+                    size={20}
+                    weight="bold"
+                    style={{ color: isSelected ? primaryColor : '#6B7280' }}
+                  />
+                )}
+                <div
+                  className="text-xs font-medium"
+                  style={isSelected ? { color: primaryColor } : { color: '#374151' }}
+                >
+                  {opt.label}
+                </div>
+              </button>
+            );
+          })}
         </div>
-        {errors.dietType && (
-          <p className="text-xs text-red-500">{String(errors.dietType.message)}</p>
+        {errors.occupationType && (
+          <p className="text-xs text-red-500">{String(errors.occupationType.message)}</p>
         )}
       </div>
 
       {/* Sleep */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-gray-700">
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
           Sleep per night:{' '}
           <span style={{ color: primaryColor }} className="font-bold">
             {sleepVal} hours
@@ -96,7 +117,7 @@ export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4Lifest
           className="w-full h-2 rounded-full appearance-none cursor-pointer"
           style={{ accentColor: primaryColor }}
         />
-        <div className="flex justify-between text-xs text-gray-400">
+        <div className="flex justify-between text-xs text-gray-400 dark:text-zinc-500">
           <span>4h (poor)</span>
           <span>7h (good)</span>
           <span>10h (great)</span>
@@ -105,7 +126,7 @@ export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4Lifest
 
       {/* Stress */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-gray-700">
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
           Daily stress level:{' '}
           <span style={{ color: primaryColor }} className="font-bold">
             {STRESS_LABELS[(stressVal ?? 3) - 1] ?? 'Moderate'}
@@ -119,7 +140,7 @@ export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4Lifest
               onClick={() => setValue('stressLevel', n, { shouldValidate: true })}
               className={cn(
                 'flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-all',
-                stressVal === n ? 'text-white' : 'border-gray-200 text-gray-500',
+                stressVal === n ? 'text-white' : 'border-gray-200 dark:border-zinc-700 text-gray-500 dark:text-zinc-400',
               )}
               style={
                 stressVal === n
@@ -136,47 +157,9 @@ export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4Lifest
         )}
       </div>
 
-      {/* Occupation */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium text-gray-700">Occupation Type</Label>
-        <div className="grid grid-cols-3 gap-2">
-          {OCCUPATION_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setValue('occupationType', opt.value, { shouldValidate: true })}
-              className={cn(
-                'p-3 rounded-xl border-2 text-center transition-all duration-200',
-                selectedOccupation === opt.value
-                  ? 'border-current'
-                  : 'border-gray-200 hover:border-gray-300',
-              )}
-              style={
-                selectedOccupation === opt.value
-                  ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
-                  : {}
-              }
-            >
-              <div className="text-xl">{opt.icon}</div>
-              <div
-                className="text-xs font-medium mt-1"
-                style={
-                  selectedOccupation === opt.value ? { color: primaryColor } : { color: '#374151' }
-                }
-              >
-                {opt.label}
-              </div>
-            </button>
-          ))}
-        </div>
-        {errors.occupationType && (
-          <p className="text-xs text-red-500">{String(errors.occupationType.message)}</p>
-        )}
-      </div>
-
       {/* Food Allergies */}
       <div className="space-y-1.5">
-        <Label className="text-sm font-medium text-gray-700">
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
           Food Allergies <span className="text-gray-400">(optional)</span>
         </Label>
         <Input {...register('foodAllergies')} placeholder="e.g. nuts, lactose, gluten..." />
@@ -186,12 +169,12 @@ export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4Lifest
       <button
         type="button"
         onClick={() => setShowHealthFields(!showHealthFields)}
-        className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        className="flex items-center gap-2 text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 transition-colors"
       >
         <div
           className={cn(
             'w-5 h-5 rounded border-2 flex items-center justify-center transition-all',
-            showHealthFields ? 'border-current bg-current' : 'border-gray-300',
+            showHealthFields ? 'border-current bg-current' : 'border-gray-300 dark:border-zinc-600',
           )}
           style={showHealthFields ? { borderColor: primaryColor, backgroundColor: primaryColor } : {}}
         >
@@ -201,23 +184,23 @@ export default function Step4Lifestyle({ primaryColor = '#1A56DB' }: Step4Lifest
       </button>
 
       {showHealthFields && (
-        <div className="space-y-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
+        <div className="space-y-3 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800">
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-gray-700">Injuries</Label>
+            <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Injuries</Label>
             <Textarea
               {...register('injuries')}
               placeholder="Describe any current or past injuries..."
               rows={2}
-              className="resize-none bg-white"
+              className="resize-none bg-white dark:bg-zinc-900"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-gray-700">Medical Conditions</Label>
+            <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Medical Conditions</Label>
             <Textarea
               {...register('medicalConditions')}
               placeholder="e.g. diabetes, hypertension, asthma..."
               rows={2}
-              className="resize-none bg-white"
+              className="resize-none bg-white dark:bg-zinc-900"
             />
           </div>
         </div>

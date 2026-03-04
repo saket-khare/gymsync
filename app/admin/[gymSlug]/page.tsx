@@ -82,6 +82,7 @@ export default async function AdminGymPage({ params }: Props) {
       memberStatus: m.memberStatus ?? 'converted',
       leadSource: m.leadSource ?? undefined,
       convertedAt: m.convertedAt ? new Date(m.convertedAt).toISOString() : undefined,
+      leadSubstatus: (m.leadSubstatus as import('@/types').LeadSubstatus) ?? 'new',
     }));
   } catch {
     // DB not configured or empty — show empty state

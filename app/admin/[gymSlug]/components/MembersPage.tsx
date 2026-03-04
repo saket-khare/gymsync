@@ -67,6 +67,7 @@ export function MembersPage({ members, gymConfig }: MembersPageProps) {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [subscriptionModalFor, setSubscriptionModalFor] = useState<SheetRow | null>(null);
   const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [substatusOverrides, setSubstatusOverrides] = useState<Record<string, import('@/types').LeadSubstatus>>({});
 
   const byStatus = useMemo(() => {
     const statusFilter = view === 'leads' ? 'lead' : 'converted';
@@ -90,6 +91,25 @@ export function MembersPage({ members, gymConfig }: MembersPageProps) {
   function handleSort(key: SortKey) {
     setSortKey(key);
     setSortDir((d) => (sortKey === key && d === 'desc' ? 'asc' : 'desc'));
+  }
+
+  async function handleSubstatusChange(member: SheetRow, substatus: import('@/types').LeadSubstatus) {
+    if (!member.id) return;
+    setSubstatusOverrides((prev) => ({ ...prev, [member.id!]: substatus }));
+    try {
+      await fetch('/api/admin/leads/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: member.id, substatus }),
+      });
+    } catch {
+      // revert on error
+      setSubstatusOverrides((prev) => {
+        const next = { ...prev };
+        delete next[member.id!];
+        return next;
+      });
+    }
   }
 
   async function handleConvertToMember(member: SheetRow) {
@@ -184,6 +204,8 @@ export function MembersPage({ members, gymConfig }: MembersPageProps) {
         showConvertButton={view === 'leads'}
         onConvertToMember={handleConvertToMember}
         convertingId={convertingId}
+        substatusOverrides={substatusOverrides}
+        onSubstatusChange={view === 'leads' ? handleSubstatusChange : undefined}
       />
 
       {subscriptionModalFor && (

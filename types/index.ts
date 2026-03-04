@@ -124,6 +124,7 @@ export interface TrainerBrief {
 }
 
 export type MemberStatus = 'lead' | 'converted' | 'lapsed';
+export type LeadSubstatus = 'new' | 'contacted' | 'visited' | 'converted';
 export type LeadSource =
   | 'walk_in'
   | 'referral'
@@ -145,6 +146,7 @@ export interface SheetRow extends MemberFormData {
   memberStatus?: MemberStatus;
   leadSource?: LeadSource;
   convertedAt?: string;
+  leadSubstatus?: LeadSubstatus;
 }
 
 // API Response types

@@ -251,6 +251,19 @@ export async function getExistingMemberByGymEmailOrPhone(gymId: string, email: s
   return rows[0] ?? null;
 }
 
+/** Update lead substatus (new → contacted → visited → converted). */
+export async function updateLeadSubstatus(
+  memberId: string,
+  gymSlug: string,
+  substatus: 'new' | 'contacted' | 'visited' | 'converted'
+): Promise<void> {
+  const db = getDb();
+  await db
+    .update(members)
+    .set({ leadSubstatus: substatus })
+    .where(and(eq(members.id, memberId), eq(members.gymSlug, gymSlug)));
+}
+
 /** Set member_status to 'converted' and converted_at to now. */
 export async function convertLeadToMember(memberId: string) {
   const db = getDb();

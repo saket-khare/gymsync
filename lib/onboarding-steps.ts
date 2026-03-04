@@ -236,7 +236,7 @@ export const BUDGET_FOR_SUPPLEMENTS_OPTIONS = [
 
 // ─── Step metadata ─────────────────────────────────────────────────────────
 
-/** Step metadata: title, subtitle, optional flag. 6 steps. Food & Kitchen option lists (WHAT_DO_YOU_EAT, etc.) live above for meal planner and future UI. */
+/** Step metadata: title, subtitle, optional flag. 7 steps. */
 export const STEP_META = [
   {
     id: 1,
@@ -264,12 +264,18 @@ export const STEP_META = [
   },
   {
     id: 5,
+    title: 'Your food & kitchen',
+    subtitle: 'Helps us build a meal plan that actually works for you.',
+    optional: false,
+  },
+  {
+    id: 6,
     title: 'Your schedule & commitment',
     subtitle: "What's realistic for you.",
     optional: false,
   },
   {
-    id: 6,
+    id: 7,
     title: 'Quick Fitness Baseline',
     subtitle:
       "Let your trainer see your starting point. Takes 5 minutes — they'll guide you through this on Day 1.",
@@ -282,8 +288,9 @@ export const TOTAL_STEPS = STEP_META.length;
 export const STEP_LABELS = [
   'Personal',
   'Goals',
-  'Current Status',
+  'Status',
   'Lifestyle',
+  'Food',
   'Schedule',
-  'Fitness Test',
+  'Fitness',
 ] as const;

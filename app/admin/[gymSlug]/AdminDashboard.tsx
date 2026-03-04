@@ -16,23 +16,13 @@ export interface MealPlanByRowId {
   [rowId: string]: { generatedAt: string };
 }
 
-interface HighSignalMember {
-  memberId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  primaryGoal: string;
-  upsellSignal: string;
-  upsellReasoning: string;
-}
-
 interface AdminDashboardProps {
   gymConfig: GymConfig;
   members: SheetRow[];
   stats: OverviewStats;
   mealPlanByRowId?: MealPlanByRowId;
   dashboardIntelligence?: DashboardIntelligence | null;
-  highSignalMembers?: HighSignalMember[];
+  highSignalMembers?: unknown[];
 }
 
 export default function AdminDashboard({
@@ -68,7 +58,6 @@ export default function AdminDashboard({
               stats={stats}
               members={members}
               dashboardIntelligence={dashboardIntelligence}
-              highSignalMembers={highSignalMembers}
             />
           )}
           {activePage === 'members' && (

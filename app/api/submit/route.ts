@@ -3,7 +3,42 @@ import { fullMemberSchema, ONBOARDING_EXTRAS_KEYS } from '@/lib/validations';
 import { getGymConfig } from '@/lib/gym-config';
 import { createMember, getExistingMemberByGymEmailOrPhone } from '@/lib/db';
 import { normalizePhone } from '@/lib/utils';
-import type { GenerateRequestBody } from '@/types';
+import type { GenerateRequestBody, MemberFormData } from '@/types';
+
+/** Derive gymExperience from timeSinceTrained */
+function deriveGymExperience(timeSinceTrained: string): string {
+  switch (timeSinceTrained) {
+    case 'never_routine': return 'complete_beginner';
+    case 'more_than_year': return 'beginner';
+    case '3_12_months': return 'intermediate';
+    case 'currently_active': return 'advanced';
+    default: return 'complete_beginner';
+  }
+}
+
+/** Derive dietType from whatDoYouEat array */
+function deriveDietType(whatDoYouEat: string[]): string {
+  if (whatDoYouEat.includes('vegan')) return 'vegan';
+  if (whatDoYouEat.includes('red_meat') || whatDoYouEat.includes('chicken_fish')) return 'non_vegetarian';
+  if (whatDoYouEat.includes('eggs')) return 'eggetarian';
+  if (whatDoYouEat.includes('vegetarian') || whatDoYouEat.includes('dairy')) return 'vegetarian';
+  return 'other';
+}
+
+/** Derive hasHomeEquipment from homeEquipmentLevel */
+function deriveHasHomeEquipment(homeEquipmentLevel: string): boolean {
+  return homeEquipmentLevel === 'basic' || homeEquipmentLevel === 'full';
+}
+
+/** Derive budgetForSupplements from supplementsOpen */
+function deriveBudgetForSupplements(supplementsOpen: string): string {
+  switch (supplementsOpen) {
+    case 'yes': return 'medium';
+    case 'maybe': return 'low';
+    case 'whole_food': return 'none';
+    default: return 'none';
+  }
+}
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -43,6 +78,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Derive DB fields from new form fields
+    const gymExperience = deriveGymExperience(memberData.timeSinceTrained);
+    const dietType = deriveDietType(memberData.whatDoYouEat);
+    const hasHomeEquipment = deriveHasHomeEquipment(memberData.homeEquipmentLevel);
+    const budgetForSupplements = deriveBudgetForSupplements(memberData.supplementsOpen);
+
     const isDemoMode = process.env.DEMO_MODE === 'true' || !process.env.DATABASE_URL;
 
     if (!isDemoMode) {
@@ -63,7 +104,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const raw = memberData as Record<string, unknown>;
     const onboardingExtras = ONBOARDING_EXTRAS_KEYS.reduce<Record<string, unknown>>((acc, key) => {
-      if (raw[key] !== undefined && raw[key] !== null && raw[key] !== '') acc[key] = raw[key];
+      const val = raw[key];
+      if (val !== undefined && val !== null && val !== '') {
+        // For arrays, only skip if empty
+        if (Array.isArray(val) && val.length === 0) return acc;
+        acc[key] = val;
+      }
       return acc;
     }, {});
 
@@ -87,8 +133,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         heightCm: memberData.heightCm,
         bodyFatPercent: memberData.bodyFatPercent,
         selfRatedFitness: memberData.selfRatedFitness,
-        gymExperience: memberData.gymExperience,
-        dietType: memberData.dietType,
+        gymExperience,
+        dietType,
         sleepHoursPerNight: memberData.sleepHoursPerNight,
         stressLevel: memberData.stressLevel,
         occupationType: memberData.occupationType,
@@ -97,9 +143,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         foodAllergies: memberData.foodAllergies,
         daysPerWeekAvailable: memberData.daysPerWeekAvailable,
         sessionDurationMinutes: memberData.sessionDurationMinutes,
-        hasHomeEquipment: memberData.hasHomeEquipment,
+        hasHomeEquipment,
         interestedInPT: memberData.interestedInPT,
-        budgetForSupplements: memberData.budgetForSupplements,
+        budgetForSupplements,
         pushUpCount: memberData.pushUpCount,
         plankHoldSeconds: memberData.plankHoldSeconds,
         flexibilityTest: memberData.flexibilityTest,
@@ -119,6 +165,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         gymSlug: memberData.gymSlug,
         memberData: {
           ...memberData,
+          gymExperience: gymExperience as MemberFormData['gymExperience'],
+          dietType: dietType as MemberFormData['dietType'],
+          hasHomeEquipment,
+          budgetForSupplements: budgetForSupplements as MemberFormData['budgetForSupplements'],
           ...(Object.keys(onboardingExtras).length > 0 && { onboardingExtras }),
         },
       };

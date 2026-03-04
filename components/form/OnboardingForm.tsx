@@ -13,6 +13,7 @@ import {
   step4Schema,
   step5Schema,
   step6Schema,
+  step7Schema,
 } from '@/lib/validations';
 
 import FormProgress from './FormProgress';
@@ -21,6 +22,7 @@ import Step1Personal from './steps/Step1Personal';
 import Step2Goals from './steps/Step2Goals';
 import Step3CurrentStatus from './steps/Step3CurrentStatus';
 import Step4Lifestyle from './steps/Step4Lifestyle';
+import Step5FoodKitchen from './steps/Step5FoodKitchen';
 import Step5Commitment from './steps/Step5Commitment';
 import Step6FitnessTest from './steps/Step6FitnessTest';
 
@@ -35,6 +37,7 @@ const STEP_SCHEMAS = [
   step4Schema,
   step5Schema,
   step6Schema,
+  step7Schema,
 ];
 
 export default function OnboardingForm({ gymConfig }: OnboardingFormProps) {
@@ -47,16 +50,17 @@ export default function OnboardingForm({ gymConfig }: OnboardingFormProps) {
     mode: 'onTouched',
     defaultValues: {
       gymSlug: gymConfig.slug,
-      hasHomeEquipment: false,
       sleepHoursPerNight: 7,
       stressLevel: 3,
       selfRatedFitness: 3,
       _selectedDays: [] as string[],
-      // Step 5 — allow "Next" even if user doesn't change every field
+      whatDoYouEat: [] as string[],
+      cantEat: [] as string[],
+      // Step 6 defaults
       daysPerWeekAvailable: 3,
       sessionDurationMinutes: 60,
+      homeEquipmentLevel: 'none' as const,
       interestedInPT: 'maybe' as const,
-      budgetForSupplements: 'none' as const,
     },
   });
 
@@ -148,8 +152,9 @@ export default function OnboardingForm({ gymConfig }: OnboardingFormProps) {
           {currentStep === 2 && <Step2Goals primaryColor={primaryColor} />}
           {currentStep === 3 && <Step3CurrentStatus primaryColor={primaryColor} />}
           {currentStep === 4 && <Step4Lifestyle primaryColor={primaryColor} />}
-          {currentStep === 5 && <Step5Commitment primaryColor={primaryColor} />}
-          {currentStep === 6 && <Step6FitnessTest primaryColor={primaryColor} />}
+          {currentStep === 5 && <Step5FoodKitchen primaryColor={primaryColor} />}
+          {currentStep === 6 && <Step5Commitment primaryColor={primaryColor} />}
+          {currentStep === 7 && <Step6FitnessTest primaryColor={primaryColor} />}
         </div>
 
         <FormNavigation
@@ -157,7 +162,7 @@ export default function OnboardingForm({ gymConfig }: OnboardingFormProps) {
           totalSteps={TOTAL_STEPS}
           onBack={goBack}
           onNext={goNext}
-          onSkip={currentStep === 6 ? skipStep : undefined}
+          onSkip={currentStep === 7 ? skipStep : undefined}
           isSubmitting={isSubmitting}
           primaryColor={primaryColor}
         />

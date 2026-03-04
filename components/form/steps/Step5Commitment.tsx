@@ -8,13 +8,49 @@ import {
   DAY_COUNT_MAP,
   DURATION_OPTIONS,
   PT_OPTIONS,
-  BUDGET_FOR_SUPPLEMENTS_OPTIONS,
+  HOME_EQUIPMENT_LEVEL,
+  TRAINED_PT_BEFORE,
   STEP_META,
 } from '@/lib/onboarding-steps';
+import {
+  ThumbsUp,
+  Question,
+  UserMinus,
+  HouseLine,
+  Barbell,
+  Trophy,
+  UserCircle,
+  UserCircleMinus,
+  UsersThree,
+} from '@phosphor-icons/react';
 
 interface Step5CommitmentProps {
   primaryColor?: string;
 }
+
+const PT_ICONS: Record<string, React.ElementType> = {
+  yes: ThumbsUp,
+  maybe: Question,
+  no: UserMinus,
+};
+
+const PT_DESCS: Record<string, string> = {
+  yes: 'I want expert guidance',
+  maybe: 'Tell me more about it',
+  no: 'I prefer to train independently',
+};
+
+const EQUIPMENT_ICONS: Record<string, React.ElementType> = {
+  none: HouseLine,
+  basic: Barbell,
+  full: Trophy,
+};
+
+const TRAINED_PT_ICONS: Record<string, React.ElementType> = {
+  never: UserCircleMinus,
+  briefly: UserCircle,
+  regularly: UsersThree,
+};
 
 export default function Step5Commitment({ primaryColor = '#1A56DB' }: Step5CommitmentProps) {
   const {
@@ -25,9 +61,9 @@ export default function Step5Commitment({ primaryColor = '#1A56DB' }: Step5Commi
 
   const selectedDays: string[] = watch('_selectedDays') ?? [];
   const selectedDuration = watch('sessionDurationMinutes');
-  const hasHomeEquipment = watch('hasHomeEquipment');
+  const homeEquipmentLevel = watch('homeEquipmentLevel');
   const selectedPT = watch('interestedInPT');
-  const selectedSupplement = watch('budgetForSupplements');
+  const trainedPtBefore = watch('trainedPtBefore');
 
   function toggleDay(day: string) {
     let updated = [...selectedDays];
@@ -49,13 +85,13 @@ export default function Step5Commitment({ primaryColor = '#1A56DB' }: Step5Commi
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">{STEP_META[4].title}</h2>
-        <p className="text-gray-500 mt-1 text-sm">{STEP_META[4].subtitle}</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{STEP_META[5].title}</h2>
+        <p className="text-gray-500 dark:text-zinc-400 mt-1 text-sm">{STEP_META[5].subtitle}</p>
       </div>
 
       {/* Days selector */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-gray-700">
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
           Which days will you train?
           {selectedDays.length > 0 && (
             <span className="ml-2 text-xs" style={{ color: primaryColor }}>
@@ -73,7 +109,7 @@ export default function Step5Commitment({ primaryColor = '#1A56DB' }: Step5Commi
                 'flex-1 py-2.5 rounded-lg text-xs font-medium transition-all duration-200',
                 selectedDays.includes(day)
                   ? 'text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200',
+                  : 'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700',
               )}
               style={
                 selectedDays.includes(day)
@@ -85,7 +121,7 @@ export default function Step5Commitment({ primaryColor = '#1A56DB' }: Step5Commi
             </button>
           ))}
         </div>
-        <p className="text-xs text-gray-400">Select 2–6 days per week</p>
+        <p className="text-xs text-gray-400 dark:text-zinc-500">Select 2–6 days per week</p>
         {errors.daysPerWeekAvailable && (
           <p className="text-xs text-red-500">{String(errors.daysPerWeekAvailable.message)}</p>
         )}
@@ -93,145 +129,185 @@ export default function Step5Commitment({ primaryColor = '#1A56DB' }: Step5Commi
 
       {/* Session duration */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-gray-700">Session Duration</Label>
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Session Duration</Label>
         <div className="grid grid-cols-2 gap-2">
-          {DURATION_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() =>
-                setValue('sessionDurationMinutes', opt.value, { shouldValidate: true })
-              }
-              className={cn(
-                'p-3 rounded-xl border-2 text-left transition-all duration-200',
-                selectedDuration === opt.value
-                  ? 'border-current'
-                  : 'border-gray-200 hover:border-gray-300',
-              )}
-              style={
-                selectedDuration === opt.value
-                  ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
-                  : {}
-              }
-            >
-              <div
-                className="text-sm font-bold"
+          {DURATION_OPTIONS.map((opt) => {
+            const isSelected = selectedDuration === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() =>
+                  setValue('sessionDurationMinutes', opt.value, { shouldValidate: true })
+                }
+                className={cn(
+                  'p-3 rounded-xl border-2 text-left transition-all duration-200',
+                  isSelected
+                    ? ''
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900/50',
+                )}
                 style={
-                  selectedDuration === opt.value ? { color: primaryColor } : { color: '#111827' }
+                  isSelected
+                    ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
+                    : {}
                 }
               >
-                {opt.label}
-              </div>
-              <div className="text-xs text-gray-400">{opt.desc}</div>
-            </button>
-          ))}
+                <div
+                  className="text-sm font-bold"
+                  style={isSelected ? { color: primaryColor } : { color: '#111827' }}
+                >
+                  {opt.label}
+                </div>
+                <div className="text-xs text-gray-400 dark:text-zinc-500">{opt.desc}</div>
+              </button>
+            );
+          })}
         </div>
         {errors.sessionDurationMinutes && (
           <p className="text-xs text-red-500">{String(errors.sessionDurationMinutes.message)}</p>
         )}
       </div>
 
-      {/* Home Equipment */}
+      {/* Home Equipment Level */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-gray-700">Home Equipment?</Label>
-        <div className="flex gap-3">
-          {[
-            { val: true, label: 'Yes, I have some', icon: '🏠' },
-            { val: false, label: 'No, gym only', icon: '🏋️' },
-          ].map((opt) => (
-            <button
-              key={String(opt.val)}
-              type="button"
-              onClick={() => setValue('hasHomeEquipment', opt.val, { shouldValidate: true })}
-              className={cn(
-                'flex-1 p-3 rounded-xl border-2 text-center transition-all',
-                hasHomeEquipment === opt.val ? 'border-current' : 'border-gray-200',
-              )}
-              style={
-                hasHomeEquipment === opt.val
-                  ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
-                  : {}
-              }
-            >
-              <div className="text-xl">{opt.icon}</div>
-              <div className="text-xs font-medium mt-1 text-gray-700">{opt.label}</div>
-            </button>
-          ))}
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Home Equipment?</Label>
+        <div className="grid grid-cols-3 gap-2">
+          {HOME_EQUIPMENT_LEVEL.map((opt) => {
+            const Icon = EQUIPMENT_ICONS[opt.value];
+            const isSelected = homeEquipmentLevel === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setValue('homeEquipmentLevel', opt.value, { shouldValidate: true })}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-center transition-all duration-200',
+                  isSelected
+                    ? ''
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900/50',
+                )}
+                style={
+                  isSelected
+                    ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
+                    : {}
+                }
+              >
+                {Icon && (
+                  <Icon
+                    size={20}
+                    weight="bold"
+                    style={{ color: isSelected ? primaryColor : '#6B7280' }}
+                  />
+                )}
+                <div
+                  className="text-xs font-semibold"
+                  style={isSelected ? { color: primaryColor } : { color: '#374151' }}
+                >
+                  {opt.label}
+                </div>
+                <div className="text-xs text-gray-400 dark:text-zinc-500">{opt.desc}</div>
+              </button>
+            );
+          })}
+        </div>
+        {errors.homeEquipmentLevel && (
+          <p className="text-xs text-red-500">{String(errors.homeEquipmentLevel.message)}</p>
+        )}
+      </div>
+
+      {/* Trained with PT before */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+          Have you ever trained with a personal trainer?
+        </Label>
+        <div className="grid grid-cols-3 gap-2">
+          {TRAINED_PT_BEFORE.map((opt) => {
+            const Icon = TRAINED_PT_ICONS[opt.value];
+            const isSelected = trainedPtBefore === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setValue('trainedPtBefore', opt.value, { shouldValidate: true })}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-center transition-all duration-200',
+                  isSelected
+                    ? ''
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900/50',
+                )}
+                style={
+                  isSelected
+                    ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
+                    : {}
+                }
+              >
+                {Icon && (
+                  <Icon
+                    size={20}
+                    weight="bold"
+                    style={{ color: isSelected ? primaryColor : '#6B7280' }}
+                  />
+                )}
+                <div
+                  className="text-xs font-semibold"
+                  style={isSelected ? { color: primaryColor } : { color: '#374151' }}
+                >
+                  {opt.label}
+                </div>
+                <div className="text-xs text-gray-400 dark:text-zinc-500">{opt.desc}</div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* PT Interest */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-gray-700">Personal Training?</Label>
+        <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Interested in Personal Training?</Label>
         <div className="space-y-2">
-          {PT_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setValue('interestedInPT', opt.value, { shouldValidate: true })}
-              className={cn(
-                'w-full p-3 rounded-xl border-2 text-left flex items-center gap-3 transition-all',
-                selectedPT === opt.value ? 'border-current' : 'border-gray-200',
-              )}
-              style={
-                selectedPT === opt.value
-                  ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
-                  : {}
-              }
-            >
-              <span className="text-xl">{opt.icon}</span>
-              <div>
-                <div
-                  className="text-sm font-semibold"
-                  style={selectedPT === opt.value ? { color: primaryColor } : { color: '#111827' }}
-                >
-                  {opt.label}
+          {PT_OPTIONS.map((opt) => {
+            const Icon = PT_ICONS[opt.value];
+            const isSelected = selectedPT === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setValue('interestedInPT', opt.value, { shouldValidate: true })}
+                className={cn(
+                  'w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all duration-200',
+                  isSelected
+                    ? ''
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900/50',
+                )}
+                style={
+                  isSelected
+                    ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
+                    : {}
+                }
+              >
+                {Icon && (
+                  <Icon
+                    size={18}
+                    weight="bold"
+                    className="shrink-0"
+                    style={{ color: isSelected ? primaryColor : '#6B7280' }}
+                  />
+                )}
+                <div>
+                  <div
+                    className="text-sm font-semibold"
+                    style={isSelected ? { color: primaryColor } : { color: '#111827' }}
+                  >
+                    {opt.label}
+                  </div>
+                  <div className="text-xs text-gray-400 dark:text-zinc-500">{PT_DESCS[opt.value]}</div>
                 </div>
-                <div className="text-xs text-gray-400">{opt.desc}</div>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
         {errors.interestedInPT && (
           <p className="text-xs text-red-500">{String(errors.interestedInPT.message)}</p>
-        )}
-      </div>
-
-      {/* Supplement Budget */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium text-gray-700">Supplement Budget</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {BUDGET_FOR_SUPPLEMENTS_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() =>
-                setValue('budgetForSupplements', opt.value, { shouldValidate: true })
-              }
-              className={cn(
-                'p-3 rounded-xl border-2 text-left transition-all',
-                selectedSupplement === opt.value ? 'border-current' : 'border-gray-200',
-              )}
-              style={
-                selectedSupplement === opt.value
-                  ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
-                  : {}
-              }
-            >
-              <div
-                className="text-sm font-semibold"
-                style={
-                  selectedSupplement === opt.value ? { color: primaryColor } : { color: '#111827' }
-                }
-              >
-                {opt.label}
-              </div>
-              <div className="text-xs text-gray-400">{opt.desc}</div>
-            </button>
-          ))}
-        </div>
-        {errors.budgetForSupplements && (
-          <p className="text-xs text-red-500">{String(errors.budgetForSupplements.message)}</p>
         )}
       </div>
     </div>
